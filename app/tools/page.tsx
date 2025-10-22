@@ -5,8 +5,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AppSidebar } from '@/components/app-sidebar';
+import { MainHeader } from '@/app/components/MainHeader';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import {
   Search,
   FileText,
@@ -258,6 +261,8 @@ function AgentCard({ agent }: AgentCardProps) {
 }
 
 export default function AgentsPage() {
+  const isMobile = useIsMobile();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   // 検索クエリの状態管理
   const [searchQuery, setSearchQuery] = React.useState('');
 
@@ -278,8 +283,17 @@ export default function AgentsPage() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
+      {isMobile ? (
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="left" className="p-0">
+            <AppSidebar />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <AppSidebar className="hidden md:block" />
+      )}
+      <SidebarInset className="flex flex-col h-full">
+        <MainHeader onMenuClick={() => setIsMobileMenuOpen(true)} />
         <div className="min-h-screen bg-background">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
             {/* ヘッダー */}

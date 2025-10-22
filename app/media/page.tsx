@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 interface MediaFile {
   id: string;
@@ -27,6 +29,8 @@ interface MediaFile {
 }
 
 export default function MediaPage() {
+  const isMobile = useIsMobile();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -44,20 +48,20 @@ export default function MediaPage() {
         // 画像ファイルを取得
         const imageResponse = await fetch('/api/media/images');
         const images = imageResponse.ok ? await imageResponse.json() : [];
-        
+
         // 動画ファイルを取得
         const videoResponse = await fetch('/api/media/videos');
         const videos = videoResponse.ok ? await videoResponse.json() : [];
-        
+
         // 音楽ファイルを取得
         const musicResponse = await fetch('/api/media/music');
         const music = musicResponse.ok ? await musicResponse.json() : [];
-        
+
         // 全てのメディアファイルを結合し、作成日時でソート
-        const allMedia = [...images, ...videos, ...music].sort((a, b) => 
+        const allMedia = [...images, ...videos, ...music].sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-        
+
         setMediaFiles(allMedia);
       } catch (error) {
         console.error('メディアファイルの取得に失敗しました:', error);
@@ -104,9 +108,17 @@ export default function MediaPage() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <MainHeader />
+      {isMobile ? (
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="left" className="p-0">
+            <AppSidebar />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <AppSidebar className="hidden md:block" />
+      )}
+      <SidebarInset className="flex flex-col h-full">
+        <MainHeader onMenuClick={() => setIsMobileMenuOpen(true)} />
         <div className="flex flex-1 flex-col gap-4 p-4">
           <Card>
             <CardHeader>

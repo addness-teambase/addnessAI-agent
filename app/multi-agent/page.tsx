@@ -13,6 +13,8 @@ import { Message } from 'ai';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useDeepResearch } from '@/app/hooks/useDeepResearch';
 import { ArrowPathIcon, MagnifyingGlassIcon, LightBulbIcon } from '@heroicons/react/24/outline';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 // ツール実行メッセージ用の型
 interface ToolMessage {
@@ -62,6 +64,8 @@ interface BrowserbaseToolState {
 type UIMessage = Message | ToolMessage;
 
 export default function AppPage() {
+  const isMobile = useIsMobile();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // ツール実行メッセージを格納する状態
   const [toolMessages, setToolMessages] = useState<ToolMessage[]>([]);
   // 現在の会話ID（ストリームの再接続用）
@@ -555,9 +559,17 @@ export default function AppPage() {
 
   return (
     <SidebarProvider className="h-screen">
-      <AppSidebar />
+      {isMobile ? (
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="left" className="p-0">
+            <AppSidebar />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <AppSidebar className="hidden md:block" />
+      )}
       <SidebarInset className="flex flex-col h-full">
-        <MainHeader />
+        <MainHeader onMenuClick={() => setIsMobileMenuOpen(true)} />
         <div className="flex-1 flex overflow-hidden">
           {/* チャットエリア - 動的幅 */}
           <main className={`${showBrowserPanel ? 'w-1/2 border-r' : 'w-full'} flex flex-col overflow-hidden bg-white border-gray-200 transition-all duration-300`}>

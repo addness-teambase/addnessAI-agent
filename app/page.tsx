@@ -548,7 +548,7 @@ export default function AppPage() {
       ) : (
         <AppSidebar className="hidden md:block" />
       )}
-      <SidebarInset className={`flex flex-col h-full ${!isMobile ? 'md:ml-14' : ''}`}>
+      <SidebarInset className="flex flex-col h-full">
         <MainHeader onMenuClick={() => setIsMobileMenuOpen(true)} />
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* チャットエリア - 動的幅 */}
