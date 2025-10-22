@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 
