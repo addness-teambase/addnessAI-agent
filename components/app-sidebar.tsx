@@ -1,30 +1,15 @@
 "use client"
 
 import * as React from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import {
   ArrowUpCircle,
-  BarChart3,
-  Camera,
   ClipboardList,
-  Database,
-  FileCode,
-  File,
-  FileText,
-  Folder,
-  HelpCircle,
-  LayoutDashboard,
-  List,
-  Search,
-  Settings,
-  Users,
-  Image,
-  Lightbulb,
   MessageSquare,
+  Bot,
 } from "lucide-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -34,6 +19,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 
 const data = {
@@ -53,39 +42,21 @@ const data = {
       url: "/tools",
       icon: ClipboardList,
     },
-    {
-      title: "メディア一覧",
-      url: "/media",
-      icon: Image,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "設定",
-      url: "#",
-      icon: Settings,
-    },
-    {
-      title: "ヘルプ",
-      url: "#",
-      icon: HelpCircle,
-    },
-    {
-      title: "検索",
-      url: "#",
-      icon: Search,
-    },
-  ],
-  documents: [
-    {
-      name: "ドキュメント",
-      url: "#",
-      icon: File,
-    },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const mode = searchParams?.get('mode')
+  const isFAQMode = mode === 'faq-auto-response'
+
+  const handleFAQClick = () => {
+    // 会話をリセットして再表示（ページをリロード）
+    router.push('/?mode=faq-auto-response')
+    window.location.reload()
+  }
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -105,8 +76,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        
+        {/* FAQモード時のみ表示 */}
+        {isFAQMode && (
+          <>
+            <SidebarSeparator className="my-2" />
+            <SidebarGroup>
+              <SidebarGroupLabel>アクティブなエージェント</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleFAQClick} isActive={true}>
+                      <Bot className="h-4 w-4" />
+                      <span>FAQ自動応答</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarSeparator className="my-2" />
+          </>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

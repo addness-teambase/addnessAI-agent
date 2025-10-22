@@ -1,6 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useSearchParams } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { MainHeader } from '@/app/components/MainHeader';
 import { ChatInputArea } from '@/app/components/ChatInputArea';
@@ -12,15 +13,17 @@ import { DeepResearchReport } from './components/DeepResearchReport';
 import { ResearchPlan } from './components/ResearchPlan';
 import { ResearchProgress } from './components/ResearchProgress';
 import { useEnhancedDeepResearch } from '@/app/hooks/useEnhancedDeepResearch';
+import { useDifyChat } from '@/app/hooks/useDifyChat';
 import React, { useEffect, useState, useRef, useCallback, useOptimistic, startTransition } from 'react';
 import { Message } from 'ai';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useDeepResearch } from './hooks/useDeepResearch';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { Sparkles, Brain, Bot } from 'lucide-react';
+import { Sparkles, Brain, Bot, MessageSquare } from 'lucide-react';
 import { ModelProvider, useModel } from './components/ModelContext';
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Badge } from '@/components/ui/badge';
 
 // ツール実行メッセージ用の型
 interface ToolMessage {
@@ -72,6 +75,12 @@ type UIMessage = Message | ToolMessage;
 
 export default function AppPage() {
   const { currentModel } = useModel();
+  const searchParams = useSearchParams();
+  
+  // URLパラメータからモードを取得
+  const mode = searchParams?.get('mode');
+  const isFAQMode = mode === 'faq-auto-response';
+  
   // ツール実行メッセージを格納する状態
   const [toolMessages, setToolMessages] = useState<ToolMessage[]>([]);
   // 現在の会話ID（ストリームの再接続用）
@@ -86,6 +95,11 @@ export default function AppPage() {
   // Enhanced Deep Researchフック
   const deepResearch = useEnhancedDeepResearch();
 
+  // Dify Chat フック（FAQモード用）
+  const difyChat = useDifyChat({
+    apiKey: process.env.NEXT_PUBLIC_DIFY_API_KEY || 'app-uyTWjRVJlh6NhZp1WYbJproQ',
+    apiUrl: 'https://api.dify.ai/v1',
+  });
 
   // スライドツール関連の状態
   const [slideToolState, setSlideToolState] = useState<SlideToolState>({
@@ -553,7 +567,8 @@ export default function AppPage() {
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* チャットエリア - 動的幅 */}
           <main className={`${showBrowserPanel ? 'w-full md:w-1/2 border-b md:border-b-0 md:border-r' : 'w-full'} flex flex-col overflow-hidden bg-white border-gray-200 transition-all duration-300`}>
-            <div className="w-full flex-1 flex flex-col px-6 py-6 overflow-y-auto">
+            <div className="w-full flex-1 flex flex-col overflow-y-auto">
+              <div className="max-w-4xl mx-auto w-full px-4 md:px-8 py-6">
               {/* スライドツールがアクティブな場合に表示 */}
               {slideToolState.isActive && (
                 <PresentationTool
@@ -584,31 +599,69 @@ export default function AppPage() {
               )}
 
               {/* メッセージコンテナ - 常に同じ構造 */}
-              <div className={`flex-1 flex flex-col ${combinedMessages.length === 0 ? 'justify-center items-center' : 'justify-start'} min-h-0`}>
+              <div className={`flex-1 flex flex-col ${(isFAQMode ? difyChat.messages : combinedMessages).length === 0 ? 'justify-center items-center' : 'justify-start'} min-h-0`}>
                 <div className="space-y-0 pb-4">
-                  {combinedMessages.length === 0 && !isLoading && !error && (
+                  {/* 初期表示ヘッダー */}
+                  {(isFAQMode ? difyChat.messages : combinedMessages).length === 0 && !(isFAQMode ? difyChat.isLoading : isLoading) && !error && (
                     <div className="flex flex-col items-center justify-center">
                       <div className="text-center space-y-4">
-                        <h1 className="text-3xl font-normal text-gray-800">アドネスAIエージェント</h1>
+                        {isFAQMode ? (
+                          <>
+                            <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                              FAQ自動応答
+                            </h1>
+                            <div className="flex items-center justify-center gap-2">
+                              <Badge variant="outline" className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-none px-4 py-2">
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                カスタマーサポート系
+                              </Badge>
+                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 px-4 py-2">
+                                質問入力 → 回答生成
+                              </Badge>
+                            </div>
+                          </>
+                        ) : (
+                          <h1 className="text-3xl font-normal text-gray-800">アドネスAIエージェント</h1>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {combinedMessages.map((m, i) => (
-                    <ChatMessage
-                      key={`${m.id}-${i}`}
-                      message={m}
-                      onPreviewOpen={() => setIsPreviewOpen(true)}
-                      onPreviewClose={() => setIsPreviewOpen(false)}
-                      onPreviewWidthChange={handlePreviewPanelWidthChange}
-                      onBrowserbasePreview={handleBrowserbasePreview}
-                      onBrowserAutomationDetected={handleBrowserAutomationDetected}
-                      deepResearchEvents={[]}
-                      isDeepResearchLoading={deepResearch.status === 'researching'}
-                    />
-                  ))}
+                  {/* メッセージ表示 */}
+                  {isFAQMode ? (
+                    /* FAQモード：Difyメッセージ */
+                    difyChat.messages.map((m, i) => (
+                      <ChatMessage
+                        key={`${m.id}-${i}`}
+                        message={m}
+                        onPreviewOpen={() => setIsPreviewOpen(true)}
+                        onPreviewClose={() => setIsPreviewOpen(false)}
+                        onPreviewWidthChange={handlePreviewPanelWidthChange}
+                        onBrowserbasePreview={handleBrowserbasePreview}
+                        onBrowserAutomationDetected={handleBrowserAutomationDetected}
+                        deepResearchEvents={[]}
+                        isDeepResearchLoading={false}
+                      />
+                    ))
+                  ) : (
+                    /* 通常モード：既存チャット */
+                    combinedMessages.map((m, i) => (
+                      <ChatMessage
+                        key={`${m.id}-${i}`}
+                        message={m}
+                        onPreviewOpen={() => setIsPreviewOpen(true)}
+                        onPreviewClose={() => setIsPreviewOpen(false)}
+                        onPreviewWidthChange={handlePreviewPanelWidthChange}
+                        onBrowserbasePreview={handleBrowserbasePreview}
+                        onBrowserAutomationDetected={handleBrowserAutomationDetected}
+                        deepResearchEvents={[]}
+                        isDeepResearchLoading={deepResearch.status === 'researching'}
+                      />
+                    ))
+                  )}
 
-                  {isDeepResearchMode && (
+                  {/* Deep Researchモード表示（通常モードのみ） */}
+                  {!isFAQMode && isDeepResearchMode && (
                     <>
                       {deepResearch.status === 'planning' && (
                         <div className="flex items-center justify-center p-8">
@@ -647,10 +700,13 @@ export default function AppPage() {
 
                   {/* 思考中表示 */}
                   {(() => {
+                    const currentMessages = isFAQMode ? difyChat.messages : combinedMessages;
+                    const currentLoading = isFAQMode ? difyChat.isLoading : isLoading;
+                    
                     // 回答が始まったかどうかを判定
-                    const hasAssistantStartedResponse = combinedMessages.length > 0 &&
-                      combinedMessages[combinedMessages.length - 1].role === 'assistant' &&
-                      combinedMessages[combinedMessages.length - 1].content.length > 0;
+                    const hasAssistantStartedResponse = currentMessages.length > 0 &&
+                      currentMessages[currentMessages.length - 1].role === 'assistant' &&
+                      currentMessages[currentMessages.length - 1].content.length > 0;
 
                     // アイコンタイプに応じたアニメーションクラスを決定
                     const getIconAnimation = (iconComponent: any) => {
@@ -660,20 +716,24 @@ export default function AppPage() {
                       return "h-5 w-5 text-gray-600 animate-spin"; // 回転
                     };
 
-                    return statusText && statusIcon && !hasAssistantStartedResponse && (
+                    const displayStatusText = isFAQMode && currentLoading ? 'FAQ応答生成中...' : statusText;
+                    const displayStatusIcon = isFAQMode && currentLoading ? Bot : statusIcon;
+
+                    return displayStatusText && displayStatusIcon && !hasAssistantStartedResponse && (
                       <div className="w-full py-4">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-gray-100 rounded-lg">
-                            {React.createElement(statusIcon, { className: getIconAnimation(statusIcon) })}
+                            {React.createElement(displayStatusIcon, { className: getIconAnimation(displayStatusIcon) })}
                           </div>
                           <div className="text-gray-600 font-medium">
-                            {statusText}
+                            {displayStatusText}
                           </div>
                         </div>
                       </div>
                     );
                   })()}
                 </div>
+              </div>
               </div>
             </div>
           </main>
@@ -723,11 +783,11 @@ export default function AppPage() {
           )}
         </div>
         <ChatInputArea
-          input={input}
-          handleInputChange={handleInputChange}
-          handleSubmit={handleCustomSubmit}
-          isLoading={isLoading || deepResearch.status === 'researching'}
-          isDeepResearchMode={isDeepResearchMode}
+          input={isFAQMode ? difyChat.input : input}
+          handleInputChange={isFAQMode ? difyChat.handleInputChange : handleInputChange}
+          handleSubmit={isFAQMode ? difyChat.handleSubmit : handleCustomSubmit}
+          isLoading={isFAQMode ? difyChat.isLoading : (isLoading || deepResearch.status === 'researching')}
+          isDeepResearchMode={!isFAQMode && isDeepResearchMode}
           onDeepResearchModeChange={setIsDeepResearchMode}
         />
       </SidebarInset>

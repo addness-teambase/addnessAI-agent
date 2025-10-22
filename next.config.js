@@ -2,6 +2,11 @@
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
+  // Node.js v24互換性のための設定
+  devIndicators: {
+    buildActivity: true,
+    buildActivityPosition: 'bottom-right',
+  },
   // swcMinify: false, // Webpackのminifyエラーを回避
   turbopack: {
       rules: {
