@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import { Suspense } from "react"
 import {
   ArrowUpCircle,
   ClipboardList,
@@ -45,7 +46,8 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+// useSearchParams()を使用する内部コンポーネント
+function AppSidebarContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const mode = searchParams?.get('mode')
@@ -58,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar {...props}>
+    <>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -101,6 +103,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
+    </>
+  )
+}
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  return (
+    <Sidebar {...props}>
+      <Suspense fallback={
+        <>
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  className="data-[slot=sidebar-menu-button]:!p-1.5"
+                >
+                  <a href="/">
+                    <ArrowUpCircle className="h-5 w-5" />
+                    <span className="text-base font-semibold">アドネスAIエージェント</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
+          <SidebarContent>
+            <NavMain items={data.navMain} />
+          </SidebarContent>
+          <SidebarFooter>
+            <NavUser user={data.user} />
+          </SidebarFooter>
+        </>
+      }>
+        <AppSidebarContent />
+      </Suspense>
     </Sidebar>
   )
 } 
