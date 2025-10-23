@@ -5,6 +5,7 @@ const nextConfig = {
   // ビルド時の環境変数デフォルト値
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'placeholder-for-build',
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'placeholder-for-build',
   },
   // Node.js v24互換性のための設定
   devIndicators: {
@@ -13,38 +14,38 @@ const nextConfig = {
   },
   // swcMinify: false, // Webpackのminifyエラーを回避
   turbopack: {
-      rules: {
-        // Turbopack用のルール設定
-        '*.md': {
-          loaders: ['raw-loader'],
-          as: '*.js',
-        },
-        '*.LICENSE': {
-          loaders: ['raw-loader'],
-          as: '*.js',
-        },
-        // HTMLファイルを処理するためのルールを追加
-        '**/*.html': {
-          loaders: ['raw-loader'],
-          as: '*.js',
-        },
-        // Turbopack用のフォントローダー設定を修正
-        '**/*.ttf': {
-          loaders: ['file-loader'],
-          as: '*.js',
-        },
-        // Playwright関連のフォントファイルを無視
-        '**/playwright-core/**/*.ttf': false,
-        '**/playwright-core/**/assets/**': false,
+    rules: {
+      // Turbopack用のルール設定
+      '*.md': {
+        loaders: ['raw-loader'],
+        as: '*.js',
       },
+      '*.LICENSE': {
+        loaders: ['raw-loader'],
+        as: '*.js',
+      },
+      // HTMLファイルを処理するためのルールを追加
+      '**/*.html': {
+        loaders: ['raw-loader'],
+        as: '*.js',
+      },
+      // Turbopack用のフォントローダー設定を修正
+      '**/*.ttf': {
+        loaders: ['file-loader'],
+        as: '*.js',
+      },
+      // Playwright関連のフォントファイルを無視
+      '**/playwright-core/**/*.ttf': false,
+      '**/playwright-core/**/assets/**': false,
     },
+  },
   experimental: {
     // instrumentationHook: true, // 非推奨のため削除
   },
   webpack: (config, { isServer }) => {
     // Webpackの最小化を無効化
     config.optimization.minimize = false;
-    
+
     // クライアントサイドでのNode.jsモジュールの使用を無効化
     if (!isServer) {
       config.resolve.fallback = {
