@@ -1784,13 +1784,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     if (isMultimodal) {
       // 配列形式: テキストと画像を含む場合
       return (
-        <div className="flex justify-end mb-6">
-          <div className="max-w-[70%] space-y-2">
+        <div className="w-full flex justify-end mb-8">
+          <div className="max-w-[65%] space-y-3">
             {(message.content as MessageContentPart[]).map((part: any, index: number) => {
               if (part.type === 'text') {
                 return (
-                  <div key={index} className="px-4 py-3 rounded-2xl bg-gray-800 text-white">
-                    <div className="text-base leading-relaxed">
+                  <div key={index} className="px-5 py-3.5 rounded-2xl bg-gray-800 text-white shadow-sm">
+                    <div className="text-[15px] leading-relaxed">
                       {part.text.split('\n').map((line: string, i: number) => (
                         <p key={i} className={i > 0 ? 'mt-2' : ''}>{line}</p>
                       ))}
@@ -1803,7 +1803,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <img 
                       src={part.image} 
                       alt="送信画像" 
-                      className="max-w-[200px] max-h-[200px] rounded-lg border border-gray-300 object-cover"
+                      className="max-w-[200px] max-h-[200px] rounded-xl border border-gray-300 shadow-sm object-cover"
                     />
                   </div>
                 );
@@ -1819,11 +1819,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       const hasAttachments = attachments && Array.isArray(attachments) && attachments.length > 0;
       
       return (
-        <div className="flex justify-end mb-6">
-          <div className="max-w-[70%] space-y-2">
+        <div className="w-full flex justify-end mb-8">
+          <div className="max-w-[65%] space-y-3">
             {/* テキスト部分 */}
-            <div className="px-4 py-3 rounded-2xl bg-gray-800 text-white">
-              <div className="text-base leading-relaxed">
+            <div className="px-5 py-3.5 rounded-2xl bg-gray-800 text-white shadow-sm">
+              <div className="text-[15px] leading-relaxed">
                 {content.split('\n').map((line, i) => (
                   <p key={i} className={i > 0 ? 'mt-2' : ''}>{line}</p>
                 ))}
@@ -1838,7 +1838,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <img 
                       src={attachment.url || attachment.image} 
                       alt="送信画像" 
-                      className="max-w-[200px] max-h-[200px] rounded-lg border border-gray-300 object-cover"
+                      className="max-w-[200px] max-h-[200px] rounded-xl border border-gray-300 shadow-sm object-cover"
                     />
                   </div>
                 );
@@ -2489,7 +2489,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         // partsがない場合は従来の表示方法
         if (toolCallUiElements.length > 0) {
           elements.push(
-            <div key="tools" className="w-full max-w-3xl mb-6">
+            <div key="tools" className="w-full max-w-3xl mb-8">
               {toolCallUiElements}
             </div>
           );
@@ -2497,8 +2497,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
         if (content.trim()) {
           elements.push(
-            <div key="content" className="flex justify-start mb-6">
-              <div className="w-full max-w-3xl px-4 py-3 rounded-2xl bg-gray-100 text-gray-800 relative group">
+            <div key="content" className="w-full flex justify-start mb-8">
+              <div className="max-w-[85%] px-5 py-4 rounded-2xl bg-gray-50 text-gray-800 relative group shadow-sm border border-gray-100">
                 {/* コピーボタン */}
                 <button
                   onClick={() => copyToClipboard(content)}
@@ -2511,10 +2511,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <Copy className="h-4 w-4 text-gray-600" />
                   )}
                 </button>
-                <div className="prose prose-gray max-w-none text-base leading-relaxed">
+                <div className="prose prose-gray max-w-none text-[15px] leading-relaxed">
                   <ReactMarkdown 
                     components={{
-                      p: ({children}) => <p className="mb-2 last:mb-0 bg-transparent">{children}</p>,
+                      p: ({children}) => <p className="mb-3 last:mb-0 bg-transparent">{children}</p>,
                       strong: ({children}) => <strong className="font-bold">{children}</strong>,
                       em: ({children}) => <em className="italic">{children}</em>,
                       code: ({children}) => (

@@ -282,7 +282,7 @@ export const ChatInputArea = ({
   return (
     <div className="bg-white/80 backdrop-blur-md">
       <div className="safe-areas">
-        <div className="max-w-4xl mx-auto p-2 md:p-4">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-3 md:py-4">
           {/* 画像プレビューセクション */}
           {selectedImage && imagePreviewUrl && (
             <div className="mb-2 inline-block relative">

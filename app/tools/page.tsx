@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -232,21 +233,25 @@ function groupByCategory(agents: Agent[]): Record<string, Agent[]> {
 
 interface AgentCardProps {
   agent: Agent;
+  onClick?: () => void;
 }
 
-function AgentCard({ agent }: AgentCardProps) {
+function AgentCard({ agent, onClick }: AgentCardProps) {
   const AgentIcon = agent.icon;
 
   return (
-    <Card className="flex flex-col h-full transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-105 cursor-pointer">
-      <CardHeader className="flex flex-col gap-3 pb-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-md">
+    <Card 
+      className="flex flex-col h-full transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-105 cursor-pointer"
+      onClick={onClick}
+    >
+      <CardHeader className="flex flex-col gap-4 p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-md">
             <AgentIcon className="h-5 w-5 text-white" />
           </div>
           <div className="flex-1">
             <CardTitle className="text-base font-semibold leading-tight mb-2">{agent.name}</CardTitle>
-            <p className="text-xs text-muted-foreground">{agent.description}</p>
+            <p className="text-sm text-muted-foreground">{agent.description}</p>
           </div>
         </div>
         <Badge
@@ -261,6 +266,7 @@ function AgentCard({ agent }: AgentCardProps) {
 }
 
 export default function AgentsPage() {
+  const router = useRouter();
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   // 検索クエリの状態管理
@@ -281,6 +287,15 @@ export default function AgentsPage() {
     setSearchQuery('');
   };
 
+  // エージェントカードクリック時の処理
+  const handleAgentClick = (agentId: string) => {
+    if (agentId === 'faq-auto-response') {
+      // FAQ自動応答の場合はメインチャット画面に遷移
+      router.push(`/?mode=${agentId}`);
+    }
+    // 他のエージェントは今後実装
+  };
+
   return (
     <SidebarProvider>
       {isMobile ? (
@@ -294,20 +309,20 @@ export default function AgentsPage() {
       )}
       <SidebarInset className="flex flex-col h-full">
         <MainHeader onMenuClick={() => setIsMobileMenuOpen(true)} />
-        <div className="min-h-screen bg-background">
-          <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="min-h-screen bg-background flex justify-start">
+          <div className="w-full pl-12 md:pl-32 lg:pl-48 xl:pl-64 pr-8 md:pr-16 lg:pr-20 xl:pr-24 py-16 max-w-[1600px]">
             {/* ヘッダー */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <div className="mb-16">
+              <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 アドネスAIエージェント一覧
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-base">
                 ビジネスを加速する20種類のAIエージェント
               </p>
             </div>
 
             {/* 検索セクション */}
-            <Card className="mb-8 border-2">
+            <Card className="mb-16 border-2">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Search className="h-5 w-5" />
@@ -338,20 +353,24 @@ export default function AgentsPage() {
             </Card>
 
             {/* エージェント一覧 */}
-            <div className="space-y-8">
+            <div className="space-y-16">
               {Object.keys(groupedAgents).length > 0 ? (
                 Object.entries(groupedAgents).map(([category, agents]) => (
                   <div key={category}>
-                    <div className="mb-4">
+                    <div className="mb-8">
                       <h2 className="text-xl font-bold flex items-center gap-2">
                         <Bot className="h-5 w-5" />
                         {category}
                       </h2>
                       <div className="h-1 w-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded mt-2"></div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                       {agents.map(agent => (
-                        <AgentCard key={agent.id} agent={agent} />
+                        <AgentCard 
+                          key={agent.id} 
+                          agent={agent}
+                          onClick={() => handleAgentClick(agent.id)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -366,6 +385,7 @@ export default function AgentsPage() {
           </div>
         </div>
       </SidebarInset>
+
     </SidebarProvider>
   );
 } 

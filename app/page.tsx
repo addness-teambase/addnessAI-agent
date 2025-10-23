@@ -553,7 +553,8 @@ export default function AppPage() {
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* チャットエリア - 動的幅 */}
           <main className={`${showBrowserPanel ? 'w-full md:w-1/2 border-b md:border-b-0 md:border-r' : 'w-full'} flex flex-col overflow-hidden bg-white border-gray-200 transition-all duration-300`}>
-            <div className="w-full flex-1 flex flex-col px-6 py-6 overflow-y-auto">
+            <div className="w-full flex-1 flex flex-col overflow-y-auto">
+              <div className="max-w-4xl mx-auto w-full px-4 md:px-8 py-6">
               {/* スライドツールがアクティブな場合に表示 */}
               {slideToolState.isActive && (
                 <PresentationTool
@@ -674,6 +675,7 @@ export default function AppPage() {
                     );
                   })()}
                 </div>
+              </div>
               </div>
             </div>
           </main>
