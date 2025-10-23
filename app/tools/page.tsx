@@ -240,7 +240,7 @@ function AgentCard({ agent, onClick }: AgentCardProps) {
   const AgentIcon = agent.icon;
 
   return (
-    <Card 
+    <Card
       className="flex flex-col h-full transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-105 cursor-pointer"
       onClick={onClick}
     >
@@ -366,8 +366,8 @@ export default function AgentsPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                       {agents.map(agent => (
-                        <AgentCard 
-                          key={agent.id} 
+                        <AgentCard
+                          key={agent.id}
                           agent={agent}
                           onClick={() => handleAgentClick(agent.id)}
                         />

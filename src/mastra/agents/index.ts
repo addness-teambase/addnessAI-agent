@@ -32,5 +32,5 @@ export const weatherAgent = new Agent({
 
 export { slideCreatorAgent, getSlideCreatorAgent } from './slideCreatorAgent';
 export { imageCreatorAgent } from './imageCreatorAgent';
-export { deepResearchAgent } from './deepResearchAgent';
-export * from './open-superagent';
+// export { deepResearchAgent } from './deepResearchAgent'; // Removed - file was deleted
+// export * from './open-superagent'; // Removed - file was deleted

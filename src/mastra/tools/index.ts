@@ -101,89 +101,24 @@ function getWeatherCondition(code: number): string {
   return conditions[code] || 'Unknown';
 }
 
-// Import all tools to make them available in this module's scope
+// Import only the tools that actually exist
 import { htmlSlideTool } from './htmlSlideTool';
-import { webSearchTool } from './webSearchTool';
-import { braveImageSearchTool } from './braveImageSearchTool';
 import { geminiImageGenerationTool } from './geminiImageGenerationTool';
 import { presentationPreviewTool } from './presentationPreviewTool';
-import { geminiVideoGenerationTool } from './geminiVideoGenerationTool';
-import { grokXSearchTool } from './grokXSearchTool';
-import { imagen4GenerationTool } from './imagen4GenerationTool';
 import { graphicRecordingTool } from './graphicRecordingTool';
-import { minimaxTTSTool } from './minimaxTTSTool';
-import { browserSessionTool } from './browserSessionTool';
-import { browserGotoTool } from './browserGotoTool';
-import { browserActTool } from './browserActTool';
-import { browserExtractTool } from './browserExtractTool';
-import { browserObserveTool } from './browserObserveTool';
-import { browserWaitTool } from './browserWaitTool';
-import { browserScreenshotTool } from './browserScreenshotTool';
-import { browserCloseTool } from './browserCloseTool';
-import { browserCaptchaDetectTool } from './browserCaptchaDetectTool';
-import { claudeAnalysisTool } from './claudeAnalysisTool';
-import { claudeFileTool } from './claudeFileTool';
-import { claudeAutoEditTool } from './claudeAutoEditTool';
-import { claudeCodeSDKTool } from './claudeCodeSDKTool';
-import { githubListIssuesTool } from './githubListIssuesTool';
 import { fileAppendTool } from './fileAppendTool';
-// Enhanced browser tools
-import { browserContextCreateTool } from './browserContextCreateTool';
-import { browserContextUseTool } from './browserContextUseTool';
-import { browserSessionQueryTool } from './browserSessionQueryTool';
-import { browserDownloadTool } from './browserDownloadTool';
-import { browserUploadTool } from './browserUploadTool';
-// Enhanced research tools (removed for build stability)
-// Visual editing tools
 import { visualSlideEditorTool } from './visualSlideEditorTool';
-// Google Workspace tools
-import { googleSlidesCreationTool } from './googleSlidesCreationTool';
-import { googleSheetsCreationTool } from './googleSheetsCreationTool';
-import { googleDocsCreationTool } from './googleDocsCreationTool';
-import { googleApiTestTool } from './googleApiTestTool';
+// Other tools removed due to file deletion
 
 // Define the list of all tools
 export const allTools = [
   weatherTool,
   htmlSlideTool,
-  webSearchTool,
-  braveImageSearchTool,
   geminiImageGenerationTool,
   presentationPreviewTool,
-  geminiVideoGenerationTool,
-  grokXSearchTool,
-  imagen4GenerationTool,
   graphicRecordingTool,
-  minimaxTTSTool,
-  browserSessionTool,
-  browserGotoTool,
-  browserActTool,
-  browserExtractTool,
-  browserObserveTool,
-  browserWaitTool,
-  browserScreenshotTool,
-  browserCloseTool,
-  browserCaptchaDetectTool,
-  // Enhanced browser tools
-  browserContextCreateTool,
-  browserContextUseTool,
-  browserSessionQueryTool,
-  browserDownloadTool,
-  browserUploadTool,
-  claudeAnalysisTool,
-  claudeFileTool,
-  claudeAutoEditTool,
-  claudeCodeSDKTool,
-  githubListIssuesTool,
   fileAppendTool,
-  // Enhanced research tools (removed for build stability)
-  // Visual editing tools
   visualSlideEditorTool,
-  // Google Workspace tools
-  googleSlidesCreationTool,
-  googleSheetsCreationTool,
-  googleDocsCreationTool,
-  googleApiTestTool,
 ];
 
 // Define the list of all tool names, handling both .name and .id properties
@@ -192,42 +127,9 @@ export const allToolNames = allTools.map((t: any) => t.name || t.id);
 // Export all the tools to make them available to other modules
 export {
   htmlSlideTool,
-  webSearchTool,
-  braveImageSearchTool,
   geminiImageGenerationTool,
   presentationPreviewTool,
-  geminiVideoGenerationTool,
-  grokXSearchTool,
-  imagen4GenerationTool,
   graphicRecordingTool,
-  minimaxTTSTool,
-  browserSessionTool,
-  browserGotoTool,
-  browserActTool,
-  browserExtractTool,
-  browserObserveTool,
-  browserWaitTool,
-  browserScreenshotTool,
-  browserCloseTool,
-  browserCaptchaDetectTool,
-  // Enhanced browser tools
-  browserContextCreateTool,
-  browserContextUseTool,
-  browserSessionQueryTool,
-  browserDownloadTool,
-  browserUploadTool,
-  claudeAnalysisTool,
-  claudeFileTool,
-  claudeAutoEditTool,
-  claudeCodeSDKTool,
-  githubListIssuesTool,
   fileAppendTool,
-  // Enhanced research tools (removed for build stability)
-  // Visual editing tools
   visualSlideEditorTool,
-  // Google Workspace tools
-  googleSlidesCreationTool,
-  googleSheetsCreationTool,
-  googleDocsCreationTool,
-  googleApiTestTool,
 };

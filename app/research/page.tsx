@@ -16,7 +16,7 @@ export default function ResearchPage() {
             Enhanced Research Tools
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            LangGraph-style deep research with advanced AI tools, source validation, 
+            LangGraph-style deep research with advanced AI tools, source validation,
             and comprehensive analysis capabilities.
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function ResearchPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium">
                       2
@@ -120,7 +120,7 @@ export default function ResearchPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
                       3
@@ -132,7 +132,7 @@ export default function ResearchPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-sm font-medium">
                       4
@@ -144,7 +144,7 @@ export default function ResearchPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-sm font-medium">
                       5
@@ -167,19 +167,19 @@ export default function ResearchPage() {
               <CardContent className="space-y-3">
                 <div className="text-sm space-y-2">
                   <p>
-                    <strong>Complexity Settings:</strong> Use "Auto" for most questions, 
+                    <strong>Complexity Settings:</strong> Use "Auto" for most questions,
                     "Complex" for multi-faceted research topics.
                   </p>
                   <p>
-                    <strong>Source Validation:</strong> Always enable for academic or 
+                    <strong>Source Validation:</strong> Always enable for academic or
                     professional research requiring high credibility.
                   </p>
                   <p>
-                    <strong>Synthesis Types:</strong> "Analytical" for detailed analysis, 
+                    <strong>Synthesis Types:</strong> "Analytical" for detailed analysis,
                     "Overview" for broad summaries, "Comparative" for contrasting viewpoints.
                   </p>
                   <p>
-                    <strong>Citations:</strong> Enable when you need properly formatted 
+                    <strong>Citations:</strong> Enable when you need properly formatted
                     references for academic or professional use.
                   </p>
                 </div>

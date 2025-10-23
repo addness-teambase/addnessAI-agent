@@ -3,15 +3,15 @@ import { Mastra } from '@mastra/core';
 import { createLogger } from '@mastra/core/logger';
 import { LibSQLStore } from '@mastra/libsql';
 import { weatherAgent, slideCreatorAgent, imageCreatorAgent } from './agents';
-import { 
-  queryPlanningAgent, 
-  researchAnalysisAgent, 
-  researchSynthesisAgent, 
-  knowledgeGapAgent, 
-  sourceValidationAgent 
+import {
+  queryPlanningAgent,
+  researchAnalysisAgent,
+  researchSynthesisAgent,
+  knowledgeGapAgent,
+  sourceValidationAgent
 } from './agents/researchAgent';
-import { 
-  htmlSlideTool, 
+import {
+  htmlSlideTool,
   presentationPreviewTool,
   webSearchTool,
   geminiImageGenerationTool,
@@ -31,7 +31,7 @@ import {
 
 // @ts-ignore - Type definition issue with tools property
 export const mastra = new Mastra({
-  agents: { 
+  agents: {
     weatherAgent,
     slideCreatorAgent,
     imageCreatorAgent,
@@ -42,8 +42,8 @@ export const mastra = new Mastra({
     knowledgeGapAgent,
     sourceValidationAgent,
   },
-  tools: { 
-    htmlSlideTool, 
+  tools: {
+    htmlSlideTool,
     presentationPreviewTool,
     webSearchTool,
     geminiImageGenerationTool,
@@ -63,7 +63,7 @@ export const mastra = new Mastra({
     // Deep Research workflow removed
   },
   storage: new LibSQLStore({
-    url: process.env.NODE_ENV === 'production' 
+    url: process.env.NODE_ENV === 'production'
       ? "file:./memory.db"     // Vercel: /var/task/memory.db
       : "file:../memory.db",   // Local: プロジェクトルート/memory.db
   }),
