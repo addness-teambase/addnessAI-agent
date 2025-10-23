@@ -2,6 +2,10 @@
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
+  // ビルド時の環境変数デフォルト値
+  env: {
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'placeholder-for-build',
+  },
   // Node.js v24互換性のための設定
   devIndicators: {
     buildActivity: true,
