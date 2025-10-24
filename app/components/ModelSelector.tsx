@@ -112,7 +112,7 @@ export const ModelSelector = () => {
             if (!acc[model.provider]) acc[model.provider] = [];
             acc[model.provider].push(model);
             return acc;
-          }, {} as Record<ModelProvider, Model[]>)
+          }, {} as Record<ModelProvider, ModelWithAvailability[]>)
         ).map(([provider, providerModels]) => (
           <div key={provider}>
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
