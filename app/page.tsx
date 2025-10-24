@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { MainHeader } from '@/app/components/MainHeader';
 import { ChatInputArea } from '@/app/components/ChatInputArea';
 import { ChatMessage } from './components/ChatMessage';
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { Message } from 'ai';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Sparkles } from 'lucide-react';
@@ -16,7 +16,7 @@ import { useSearchParams } from 'next/navigation';
 
 type UIMessage = Message;
 
-export default function AppPage() {
+function AppPageContent() {
   const { currentModel } = useModel();
   const searchParams = useSearchParams();
   const mode = searchParams?.get('mode');
@@ -272,5 +272,20 @@ export default function AppPage() {
         />
       </SidebarInset>
     </SidebarProvider>
+  );
+}
+
+export default function AppPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center gap-3">
+          <Sparkles className="h-6 w-6 text-blue-600 animate-pulse" />
+          <span className="text-gray-600">読み込み中...</span>
+        </div>
+      </div>
+    }>
+      <AppPageContent />
+    </Suspense>
   );
 }
