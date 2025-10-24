@@ -56,10 +56,10 @@ const toolOptions: ToolOption[] = [
   }
 ];
 
-export const ChatInputArea = ({ 
-  input, 
-  handleInputChange, 
-  handleSubmit, 
+export const ChatInputArea = ({
+  input,
+  handleInputChange,
+  handleSubmit,
   isLoading,
   isDeepResearchMode = false,
   onDeepResearchModeChange
@@ -100,7 +100,7 @@ export const ChatInputArea = ({
       const handleResize = () => {
         adjustTextareaHeight();
       };
-      
+
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
@@ -111,17 +111,17 @@ export const ChatInputArea = ({
     if (typeof window !== 'undefined') {
       const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
       setIsSupported(!!SpeechRecognition);
-      
+
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'ja-JP';
-        
+
         recognition.onstart = () => {
           setIsListening(true);
         };
-        
+
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
           // 音声認識結果を入力フィールドに設定
@@ -130,16 +130,16 @@ export const ChatInputArea = ({
           } as React.ChangeEvent<HTMLTextAreaElement>;
           handleInputChange(syntheticEvent);
         };
-        
+
         recognition.onerror = (event: any) => {
           console.error('音声認識エラー:', event.error);
           setIsListening(false);
         };
-        
+
         recognition.onend = () => {
           setIsListening(false);
         };
-        
+
         recognitionRef.current = recognition;
       }
     }
@@ -148,7 +148,7 @@ export const ChatInputArea = ({
   // 音声認識開始/停止
   const toggleVoiceInput = () => {
     if (!recognitionRef.current) return;
-    
+
     if (isListening) {
       recognitionRef.current.stop();
     } else {
@@ -165,19 +165,19 @@ export const ChatInputArea = ({
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      
+
       // ファイルサイズの検証（10MB制限）
       if (file.size > 10 * 1024 * 1024) {
         alert('ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。');
         return;
       }
-      
+
       // MIME typeの検証
       if (!file.type.startsWith('image/')) {
         alert('画像ファイルを選択してください。');
         return;
       }
-      
+
       setSelectedImage(file);
     }
   };
@@ -187,7 +187,7 @@ export const ChatInputArea = ({
     if (selectedImage) {
       const url = URL.createObjectURL(selectedImage);
       setImagePreviewUrl(url);
-      
+
       // クリーンアップ関数でURLを解放
       return () => {
         URL.revokeObjectURL(url);
@@ -204,16 +204,16 @@ export const ChatInputArea = ({
       // デフォルトの動作（改行）を許可
       return;
     }
-    
+
     // Enterキーのみの場合
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault(); // デフォルトの改行を防ぐ
-      
+
       const currentTime = Date.now();
       const timeDiff = currentTime - lastEnterTime;
-      
-      // 300ms以内に2回目のEnterが押された場合
-      if (timeDiff < 300 && enterCount === 1) {
+
+      // 500ms以内に2回目のEnterが押された場合（Enter 2回連続）
+      if (timeDiff < 500 && enterCount === 1) {
         // フォーム送信
         const form = e.currentTarget.closest('form');
         if (form && input.trim()) {
@@ -222,15 +222,34 @@ export const ChatInputArea = ({
         setEnterCount(0);
         setLastEnterTime(0);
       } else {
-        // 1回目のEnter
+        // 1回目のEnter - 改行を追加
+        const textarea = e.currentTarget;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+        const newValue = value.substring(0, start) + '\n' + value.substring(end);
+
+        // 入力欄に改行を追加
+        const syntheticEvent = {
+          target: { value: newValue }
+        } as React.ChangeEvent<HTMLTextAreaElement>;
+        handleInputChange(syntheticEvent);
+
+        // カーソル位置を改行後に移動
+        setTimeout(() => {
+          if (textarea) {
+            textarea.selectionStart = textarea.selectionEnd = start + 1;
+          }
+        }, 0);
+
         setEnterCount(1);
         setLastEnterTime(currentTime);
-        
-        // 300ms後にカウントをリセット
+
+        // 500ms後にカウントをリセット
         setTimeout(() => {
           setEnterCount(0);
           setLastEnterTime(0);
-        }, 300);
+        }, 500);
       }
     }
   };
@@ -238,21 +257,26 @@ export const ChatInputArea = ({
   // フォーム送信時の処理を更新
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
+    // 入力がない場合は送信しない
+    if (!input.trim()) {
+      return;
+    }
+
     // 選択されたツールがある場合は、入力テキストの前にツール指示を追加
     if (selectedTool && input.trim()) {
       let modifiedInput = input;
-      
+
       if (selectedTool === 'deep-research') {
         modifiedInput = `[Deep Research] ${input}`;
       } else if (selectedTool === 'enhanced-research') {
         modifiedInput = `[Enhanced Research] ${input}`;
       }
-      
+
       // 修正された入力で送信
       const syntheticEvent = {
         ...e,
-        preventDefault: () => {},
+        preventDefault: () => { },
         target: {
           ...e.target,
           elements: {
@@ -261,11 +285,20 @@ export const ChatInputArea = ({
           }
         }
       } as React.FormEvent<HTMLFormElement>;
-      
+
       handleSubmit(syntheticEvent, selectedImage || undefined);
+
+      // 送信後に入力欄をクリア
+      const clearEvent = {
+        target: { value: '' }
+      } as React.ChangeEvent<HTMLTextAreaElement>;
+      handleInputChange(clearEvent);
+
       setSelectedImage(null); // 画像をクリア
-      
-          // Deep Researchモード以外の場合はツール選択をリセット
+      setEnterCount(0); // Enterカウントをリセット
+      setLastEnterTime(0);
+
+      // Deep Researchモード以外の場合はツール選択をリセット
       if (selectedTool !== 'deep-research' && selectedTool !== 'enhanced-research') {
         setSelectedTool('');
         if (onDeepResearchModeChange) {
@@ -275,7 +308,16 @@ export const ChatInputArea = ({
     } else {
       // 通常の送信でもpreventDefaultメソッドを含むイベントを渡す
       handleSubmit(e, selectedImage || undefined);
+
+      // 送信後に入力欄をクリア
+      const clearEvent = {
+        target: { value: '' }
+      } as React.ChangeEvent<HTMLTextAreaElement>;
+      handleInputChange(clearEvent);
+
       setSelectedImage(null); // 画像をクリア
+      setEnterCount(0); // Enterカウントをリセット
+      setLastEnterTime(0);
     }
   };
 
@@ -286,9 +328,9 @@ export const ChatInputArea = ({
           {/* 画像プレビューセクション */}
           {selectedImage && imagePreviewUrl && (
             <div className="mb-2 inline-block relative">
-              <img 
-                src={imagePreviewUrl} 
-                alt="添付画像" 
+              <img
+                src={imagePreviewUrl}
+                alt="添付画像"
                 className="max-h-16 max-w-[200px] rounded-lg border border-gray-200"
               />
               <button
@@ -301,150 +343,149 @@ export const ChatInputArea = ({
               </button>
             </div>
           )}
-          
+
           <form onSubmit={handleFormSubmit}>
             <div className="relative flex items-center bg-gray-100 rounded-2xl md:rounded-3xl border border-gray-200 focus-within:ring-1 focus-within:ring-gray-300 focus-within:border-gray-300 transition-all shadow-sm">
-            {/* ツール選択ドロップダウン */}
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="hidden md:flex items-center gap-1 px-3 py-2 ml-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-2xl transition-colors"
-                  disabled={isLoading}
-                >
-                  {selectedTool ? (
-                    <>
-                      {toolOptions.find(opt => opt.value === selectedTool)?.icon}
-                      <span className="text-xs font-medium">
-                        {isDeepResearchMode && (selectedTool === 'deep-research' || selectedTool === 'enhanced-research')
-                          ? selectedTool === 'enhanced-research' ? 'Enhanced Research (有効)' : 'Deep Research (有効)'
-                          : toolOptions.find(opt => opt.value === selectedTool)?.label}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-xs">ツール</span>
-                    </>
-                  )}
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="ツールを検索..." />
-                  <CommandList>
-                    <CommandEmpty>ツールが見つかりません</CommandEmpty>
-                    <CommandGroup>
-                      {toolOptions.map((option) => (
-                        <CommandItem
-                          key={option.value}
-                          value={option.value}
-                          onSelect={(currentValue) => {
-                            const newSelectedTool = currentValue === selectedTool ? '' : currentValue;
-                            setSelectedTool(newSelectedTool);
-                            setOpen(false);
-                            
-                            // Deep Researchモードの状態を更新
-                            if (onDeepResearchModeChange) {
-                              onDeepResearchModeChange(newSelectedTool === 'deep-research' || newSelectedTool === 'enhanced-research');
-                            }
-                          }}
-                          className="flex items-start gap-3 p-3"
-                        >
-                          <div className="mt-0.5">{option.icon}</div>
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{option.label}</div>
-                            <div className="text-xs text-gray-500">{option.description}</div>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+              {/* ツール選択ドロップダウン */}
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="hidden md:flex items-center gap-1 px-3 py-2 ml-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-2xl transition-colors"
+                    disabled={isLoading}
+                  >
+                    {selectedTool ? (
+                      <>
+                        {toolOptions.find(opt => opt.value === selectedTool)?.icon}
+                        <span className="text-xs font-medium">
+                          {isDeepResearchMode && (selectedTool === 'deep-research' || selectedTool === 'enhanced-research')
+                            ? selectedTool === 'enhanced-research' ? 'Enhanced Research (有効)' : 'Deep Research (有効)'
+                            : toolOptions.find(opt => opt.value === selectedTool)?.label}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xs">ツール</span>
+                      </>
+                    )}
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="ツールを検索..." />
+                    <CommandList>
+                      <CommandEmpty>ツールが見つかりません</CommandEmpty>
+                      <CommandGroup>
+                        {toolOptions.map((option) => (
+                          <CommandItem
+                            key={option.value}
+                            value={option.value}
+                            onSelect={(currentValue) => {
+                              const newSelectedTool = currentValue === selectedTool ? '' : currentValue;
+                              setSelectedTool(newSelectedTool);
+                              setOpen(false);
 
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                isDeepResearchMode 
-                  ? selectedTool === 'enhanced-research' 
-                    ? "Enhanced Research で高度な調査を実行します..."
-                    : "Deep Researchで詳細調査します..." 
-                  : selectedTool 
-                    ? `${toolOptions.find(opt => opt.value === selectedTool)?.label}について質問してください` 
-                    : selectedImage 
-                      ? "画像を添付しました。メッセージを入力してください。" 
-                      : "質問してみましょう"
-              }
-              className="flex-1 p-3 pl-4 pr-20 md:pr-24 bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none text-base resize-none overflow-y-auto"
-              style={{ 
-                minHeight: '52px', 
-                maxHeight: '200px', 
-                lineHeight: '1.5' 
-              }}
-              disabled={isLoading}
-              rows={1}
-            />
-            <div className="absolute right-2 flex items-center gap-1">
-              {/* 画像添付ボタン */}
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
-                onChange={handleImageSelect}
-              />
-              <button
-                type="button"
-                onClick={triggerFileInput}
+                              // Deep Researchモードの状態を更新
+                              if (onDeepResearchModeChange) {
+                                onDeepResearchModeChange(newSelectedTool === 'deep-research' || newSelectedTool === 'enhanced-research');
+                              }
+                            }}
+                            className="flex items-start gap-3 p-3"
+                          >
+                            <div className="mt-0.5">{option.icon}</div>
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{option.label}</div>
+                              <div className="text-xs text-gray-500">{option.description}</div>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  isDeepResearchMode
+                    ? selectedTool === 'enhanced-research'
+                      ? "Enhanced Research で高度な調査を実行します..."
+                      : "Deep Researchで詳細調査します..."
+                    : selectedTool
+                      ? `${toolOptions.find(opt => opt.value === selectedTool)?.label}について質問してください`
+                      : selectedImage
+                        ? "画像を添付しました。メッセージを入力してください。"
+                        : "質問してみましょう"
+                }
+                className="flex-1 p-3 pl-4 pr-20 md:pr-24 bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none text-base resize-none overflow-y-auto"
+                style={{
+                  minHeight: '52px',
+                  maxHeight: '200px',
+                  lineHeight: '1.5'
+                }}
                 disabled={isLoading}
-                className="hidden md:flex p-2 rounded-full transition-colors text-gray-600 bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                title="画像を添付"
-              >
-                <Paperclip className="h-4 w-4" />
-              </button>
-
-              {/* 音声入力ボタン */}
-              {isSupported && (
+                rows={1}
+              />
+              <div className="absolute right-2 flex items-center gap-1">
+                {/* 画像添付ボタン */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleImageSelect}
+                />
                 <button
                   type="button"
-                  onClick={toggleVoiceInput}
+                  onClick={triggerFileInput}
                   disabled={isLoading}
-                  className={`hidden md:flex p-2 rounded-full transition-colors ${
-                    isListening 
-                      ? 'text-red-600 bg-red-50 hover:bg-red-100' 
-                      : 'text-gray-600 bg-gray-50 hover:bg-gray-200'
-                  } disabled:bg-gray-300 disabled:cursor-not-allowed`}
-                  title={isListening ? '音声入力を停止' : '音声入力を開始'}
+                  className="hidden md:flex p-2 rounded-full transition-colors text-gray-600 bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  title="画像を添付"
                 >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  <Paperclip className="h-4 w-4" />
                 </button>
-              )}
-              
-              {/* 送信ボタン */}
-              <button 
-                type="submit" 
-                disabled={isLoading || !input.trim()} 
-                className="p-2.5 md:p-2 text-white bg-black rounded-full hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                <ArrowUp className="h-5 w-5" />
-              </button>
+
+                {/* 音声入力ボタン */}
+                {isSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleVoiceInput}
+                    disabled={isLoading}
+                    className={`hidden md:flex p-2 rounded-full transition-colors ${isListening
+                      ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                      : 'text-gray-600 bg-gray-50 hover:bg-gray-200'
+                      } disabled:bg-gray-300 disabled:cursor-not-allowed`}
+                    title={isListening ? '音声入力を停止' : '音声入力を開始'}
+                  >
+                    {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </button>
+                )}
+
+                {/* 送信ボタン */}
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="p-2.5 md:p-2 text-white bg-black rounded-full hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-          </div>
-          
-          {/* 音声認識状態表示 */}
-          {isListening && (
-            <div className="mt-2 text-center">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-50 text-red-700">
-                <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                音声を聞いています...
-              </span>
-            </div>
-          )}
+
+            {/* 音声認識状態表示 */}
+            {isListening && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-50 text-red-700">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                  音声を聞いています...
+                </span>
+              </div>
+            )}
           </form>
         </div>
       </div>

@@ -57,4 +57,4 @@ next-env.d.ts
 *.db-wal
 
 .mastra
-\n# Agent-generated files\n/public/slidecreatorAgent/
+

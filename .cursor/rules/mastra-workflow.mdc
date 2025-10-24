@@ -190,14 +190,9 @@ await workflow.resume('wait-for-approval', approvalData);
 Mastraのエージェントやツールとの連携：
 
 ```typescript
-import { myAgent } from './agents';
 import { myTool } from './tools';
 
-const agentWorkflow = createWorkflow({...})
-  .then(async (context) => {
-    const agentResult = await myAgent.execute(context.inputData);
-    return agentResult;
-  })
+const toolWorkflow = createWorkflow({...})
   .then(async (context) => {
     const toolResult = await myTool.execute({
       context: context.inputData

@@ -2,20 +2,11 @@
 import { Mastra } from '@mastra/core';
 import { createLogger } from '@mastra/core/logger';
 import { LibSQLStore } from '@mastra/libsql';
-import { weatherAgent, slideCreatorAgent, imageCreatorAgent } from './agents';
-import {
-  queryPlanningAgent,
-  researchAnalysisAgent,
-  researchSynthesisAgent,
-  knowledgeGapAgent,
-  sourceValidationAgent
-} from './agents/researchAgent';
 import {
   htmlSlideTool,
   presentationPreviewTool,
   geminiImageGenerationTool,
   graphicRecordingTool,
-  fileAppendTool,
   visualSlideEditorTool,
   weatherTool,
   // Other tools removed for build stability
@@ -25,22 +16,12 @@ import {
 // @ts-ignore - Type definition issue with tools property
 export const mastra = new Mastra({
   agents: {
-    weatherAgent,
-    slideCreatorAgent,
-    imageCreatorAgent,
-    // Research agents
-    queryPlanningAgent,
-    researchAnalysisAgent,
-    researchSynthesisAgent,
-    knowledgeGapAgent,
-    sourceValidationAgent,
   },
   tools: {
     htmlSlideTool,
     presentationPreviewTool,
     geminiImageGenerationTool,
     graphicRecordingTool,
-    fileAppendTool,
     visualSlideEditorTool,
     weatherTool,
     // Other tools removed for build stability

@@ -23,7 +23,7 @@ npm run dev
 
 #### その他のコマンド
 ```bash
-# Build Mastra agents
+# Build Mastra
 mastra build
 ```
 
@@ -62,10 +62,7 @@ mastra dev
 - **Deployment**: Optimized for Vercel
 
 ### Core Agent System
-The application uses Mastra's agent framework with three main agents:
-1. **slideCreatorAgent (Open-SuperAgent)**: The primary agent with access to all tools
-2. **imageCreatorAgent**: Specialized for image generation tasks
-3. **weatherAgent**: Basic weather information agent
+The application uses Mastra's agent framework.
 
 ### Tool Ecosystem
 Tools are modular and located in `src/mastra/tools/`:
@@ -79,7 +76,6 @@ Tools are modular and located in `src/mastra/tools/`:
 ### API Routes Structure
 All API endpoints are in `app/api/`:
 - `/chat`: Main chat endpoint with streaming support
-- `/slide-creator/chat`: Specialized presentation chat interface
 - `/export-pptx*`: Four different PPTX export methods
 - `/media/*`: Image, video, and music generation endpoints
 
@@ -135,7 +131,6 @@ TAVILY_API_KEY      # For web search MCP server
 1. Create tool file in `src/mastra/tools/`
 2. Export from `src/mastra/tools/index.ts`
 3. Register in `src/mastra/index.ts`
-4. Add to relevant agents in `src/mastra/agents/`
 
 ### MCP (Model Context Protocol) Integration
 
@@ -153,13 +148,13 @@ The application now supports MCP servers for extended capabilities:
 MCP servers are configured in `src/mastra/config/mcp.config.ts`. The system automatically:
 - Detects available API keys from environment variables
 - Initializes only the servers with valid credentials
-- Dynamically adds MCP tools to the slideCreatorAgent
+- Dynamically adds MCP tools to the agent
 
 #### Adding New MCP Servers
 To add a new MCP server:
 1. Add the server configuration to `mcpServerConfigs` in `mcp.config.ts`
 2. Include any required environment variables
-3. The tools will be automatically available to agents
+3. The tools will be automatically available to the agent
 
 Example:
 ```typescript
@@ -281,10 +276,9 @@ lsof -i :12306
 - Control browser tabs programmatically
 
 ### Testing Presentations
-1. Use the `/tools` page for interactive testing
-2. Check browser console for streaming events
-3. Preview slides with the presentation preview panel
-4. Export to PPTX using the Nutrient method for best results
+1. Check browser console for streaming events
+2. Preview slides with the presentation preview panel
+3. Export to PPTX using the Nutrient method for best results
 
 ### Browser Automation Features
 

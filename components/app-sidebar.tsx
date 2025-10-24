@@ -8,6 +8,7 @@ import {
   ClipboardList,
   MessageSquare,
   Bot,
+  Users,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -40,8 +41,8 @@ const data = {
     },
     {
       title: "エージェント一覧",
-      url: "/tools",
-      icon: ClipboardList,
+      url: "/agents",
+      icon: Users,
     },
   ],
 }

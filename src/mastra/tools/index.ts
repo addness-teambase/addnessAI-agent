@@ -106,7 +106,7 @@ import { htmlSlideTool } from './htmlSlideTool';
 import { geminiImageGenerationTool } from './geminiImageGenerationTool';
 import { presentationPreviewTool } from './presentationPreviewTool';
 import { graphicRecordingTool } from './graphicRecordingTool';
-import { fileAppendTool } from './fileAppendTool';
+
 import { visualSlideEditorTool } from './visualSlideEditorTool';
 // Other tools removed due to file deletion
 
@@ -117,7 +117,6 @@ export const allTools = [
   geminiImageGenerationTool,
   presentationPreviewTool,
   graphicRecordingTool,
-  fileAppendTool,
   visualSlideEditorTool,
 ];
 
@@ -130,6 +129,5 @@ export {
   geminiImageGenerationTool,
   presentationPreviewTool,
   graphicRecordingTool,
-  fileAppendTool,
   visualSlideEditorTool,
 };
