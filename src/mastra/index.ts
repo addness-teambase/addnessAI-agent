@@ -13,19 +13,12 @@ import {
 import {
   htmlSlideTool,
   presentationPreviewTool,
-  webSearchTool,
   geminiImageGenerationTool,
-  geminiVideoGenerationTool,
-  grokXSearchTool,
-  imagen4GenerationTool,
   graphicRecordingTool,
-  minimaxTTSTool,
+  fileAppendTool,
+  visualSlideEditorTool,
   weatherTool,
-  // Google Workspace tools
-  googleSlidesCreationTool,
-  googleSheetsCreationTool,
-  googleDocsCreationTool,
-  // Enhanced research tools removed for build stability
+  // Other tools removed for build stability
 } from './tools';
 // Deep Research workflow import removed
 
@@ -45,19 +38,12 @@ export const mastra = new Mastra({
   tools: {
     htmlSlideTool,
     presentationPreviewTool,
-    webSearchTool,
     geminiImageGenerationTool,
-    geminiVideoGenerationTool,
-    grokXSearchTool,
-    imagen4GenerationTool,
     graphicRecordingTool,
-    minimaxTTSTool,
+    fileAppendTool,
+    visualSlideEditorTool,
     weatherTool,
-    // Google Workspace tools
-    googleSlidesCreationTool,
-    googleSheetsCreationTool,
-    googleDocsCreationTool,
-    // Enhanced research tools removed for build stability
+    // Other tools removed for build stability
   } as any,
   workflows: {
     // Deep Research workflow removed

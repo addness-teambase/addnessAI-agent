@@ -35,7 +35,7 @@ export function createModel(provider: string, modelName: string) {
 }
 
 // slideCreatorAgentを動的に作成する関数
-export async function createSlideCreatorAgent(provider: string = 'gemini', modelName: string = 'gemini-2.0-flash-exp') {
+export async function createSlideCreatorAgent(provider: string = 'gemini', modelName: string = 'gemini-2.5-flash') {
   const model = createModel(provider, modelName);
   
   
