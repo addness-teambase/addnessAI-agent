@@ -91,7 +91,14 @@ export const ChatInputArea = ({
 
   // 入力値が変更されたときに高さを調整
   useEffect(() => {
-    adjustTextareaHeight();
+    if (input === '') {
+      // 空の時は最小高さにリセット
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '52px';
+      }
+    } else {
+      adjustTextareaHeight();
+    }
   }, [input]);
 
   // ウィンドウサイズ変更時に高さを再調整
@@ -197,15 +204,33 @@ export const ChatInputArea = ({
     }
   }, [selectedImage]);
 
-  // キーボードイベントハンドラ（ChatGPTスタイル）
+  // IME関連の状態
+  const [isComposing, setIsComposing] = useState(false);
+
+  // IME開始時
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  // IME終了時
+  const handleCompositionEnd = () => {
+    setIsComposing(false);
+  };
+
+  // キーボードイベントハンドラ（IME対応）
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // IME入力中はEnterキーの処理をスキップ
+    if (isComposing) {
+      return;
+    }
+
     // Shift+Enterの場合は改行を許可
     if (e.key === 'Enter' && e.shiftKey) {
       // デフォルトの動作（改行）を許可
       return;
     }
 
-    // Enterキーのみの場合は送信（ChatGPTと同じ）
+    // Enterキーのみの場合は送信（IME確定後のみ）
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault(); // デフォルトの改行を防ぐ
       
@@ -234,6 +259,11 @@ export const ChatInputArea = ({
     // 送信後に画像をクリア
     setSelectedImage(null);
     setImagePreviewUrl(null);
+    
+    // textareaの高さを初期値にリセット
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '52px';
+    }
   };
 
   return (
@@ -326,6 +356,8 @@ export const ChatInputArea = ({
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onCompositionStart={handleCompositionStart}
+                onCompositionEnd={handleCompositionEnd}
                 placeholder={
                   isDeepResearchMode
                     ? selectedTool === 'enhanced-research'
