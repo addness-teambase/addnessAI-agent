@@ -197,7 +197,7 @@ export const ChatInputArea = ({
     }
   }, [selectedImage]);
 
-  // キーボードイベントハンドラ
+  // キーボードイベントハンドラ（ChatGPTスタイル）
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Shift+Enterの場合は改行を許可
     if (e.key === 'Enter' && e.shiftKey) {
@@ -205,56 +205,21 @@ export const ChatInputArea = ({
       return;
     }
 
-    // Enterキーのみの場合
+    // Enterキーのみの場合は送信（ChatGPTと同じ）
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault(); // デフォルトの改行を防ぐ
-
-      const currentTime = Date.now();
-      const timeDiff = currentTime - lastEnterTime;
-
-      // 500ms以内に2回目のEnterが押された場合（Enter 2回連続）
-      if (timeDiff < 500 && enterCount === 1) {
-        // フォーム送信
+      
+      // 入力がある場合のみ送信
+      if (input.trim()) {
         const form = e.currentTarget.closest('form');
-        if (form && input.trim()) {
+        if (form) {
           form.requestSubmit();
         }
-        setEnterCount(0);
-        setLastEnterTime(0);
-      } else {
-        // 1回目のEnter - 改行を追加
-        const textarea = e.currentTarget;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const value = textarea.value;
-        const newValue = value.substring(0, start) + '\n' + value.substring(end);
-
-        // 入力欄に改行を追加
-        const syntheticEvent = {
-          target: { value: newValue }
-        } as React.ChangeEvent<HTMLTextAreaElement>;
-        handleInputChange(syntheticEvent);
-
-        // カーソル位置を改行後に移動
-        setTimeout(() => {
-          if (textarea) {
-            textarea.selectionStart = textarea.selectionEnd = start + 1;
-          }
-        }, 0);
-
-        setEnterCount(1);
-        setLastEnterTime(currentTime);
-
-        // 500ms後にカウントをリセット
-        setTimeout(() => {
-          setEnterCount(0);
-          setLastEnterTime(0);
-        }, 500);
       }
     }
   };
 
-  // フォーム送信時の処理を更新
+  // フォーム送信時の処理（ChatGPTスタイル）
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -263,62 +228,12 @@ export const ChatInputArea = ({
       return;
     }
 
-    // 選択されたツールがある場合は、入力テキストの前にツール指示を追加
-    if (selectedTool && input.trim()) {
-      let modifiedInput = input;
+    // そのまま送信
+    handleSubmit(e, selectedImage || undefined);
 
-      if (selectedTool === 'deep-research') {
-        modifiedInput = `[Deep Research] ${input}`;
-      } else if (selectedTool === 'enhanced-research') {
-        modifiedInput = `[Enhanced Research] ${input}`;
-      }
-
-      // 修正された入力で送信
-      const syntheticEvent = {
-        ...e,
-        preventDefault: () => { },
-        target: {
-          ...e.target,
-          elements: {
-            ...((e.target as HTMLFormElement).elements),
-            0: { value: modifiedInput }
-          }
-        }
-      } as React.FormEvent<HTMLFormElement>;
-
-      handleSubmit(syntheticEvent, selectedImage || undefined);
-
-      // 送信後に入力欄をクリア
-      const clearEvent = {
-        target: { value: '' }
-      } as React.ChangeEvent<HTMLTextAreaElement>;
-      handleInputChange(clearEvent);
-
-      setSelectedImage(null); // 画像をクリア
-      setEnterCount(0); // Enterカウントをリセット
-      setLastEnterTime(0);
-
-      // Deep Researchモード以外の場合はツール選択をリセット
-      if (selectedTool !== 'deep-research' && selectedTool !== 'enhanced-research') {
-        setSelectedTool('');
-        if (onDeepResearchModeChange) {
-          onDeepResearchModeChange(false);
-        }
-      }
-    } else {
-      // 通常の送信でもpreventDefaultメソッドを含むイベントを渡す
-      handleSubmit(e, selectedImage || undefined);
-
-      // 送信後に入力欄をクリア
-      const clearEvent = {
-        target: { value: '' }
-      } as React.ChangeEvent<HTMLTextAreaElement>;
-      handleInputChange(clearEvent);
-
-      setSelectedImage(null); // 画像をクリア
-      setEnterCount(0); // Enterカウントをリセット
-      setLastEnterTime(0);
-    }
+    // 送信後に画像をクリア
+    setSelectedImage(null);
+    setImagePreviewUrl(null);
   };
 
   return (

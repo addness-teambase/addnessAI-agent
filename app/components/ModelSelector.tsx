@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type ModelProvider = 'openai' | 'claude' | 'gemini' | 'grok';
+type ModelProvider = 'openai' | 'claude' | 'gemini';
 
 interface Model {
   id: string;
@@ -19,17 +19,30 @@ interface Model {
   displayName: string;
 }
 
-const models: Model[] = [
-  { id: 'gpt-4.1', provider: 'openai', name: 'gpt-4.1', displayName: 'GPT-4.1' },
-  { id: 'o3-2025-04-16', provider: 'openai', name: 'o3-2025-04-16', displayName: 'o3' },
-  { id: 'o3-pro-2025-06-10', provider: 'openai', name: 'o3-pro-2025-06-10', displayName: 'o3 Pro' },
-  { id: 'o4-mini-2025-04-16', provider: 'openai', name: 'o4-mini-2025-04-16', displayName: 'o4-mini' },
-  { id: 'claude-opus-4-20250514', provider: 'claude', name: 'claude-opus-4-20250514', displayName: 'Claude Opus 4' },
-  { id: 'claude-sonnet-4-20250514', provider: 'claude', name: 'claude-sonnet-4-20250514', displayName: 'Claude Sonnet 4' },
-  { id: 'gemini-2.5-flash', provider: 'gemini', name: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash' },
-  { id: 'gemini-2.5-flash-lite', provider: 'gemini', name: 'gemini-2.5-flash-lite-preview-06-17', displayName: 'Gemini 2.5 Flash Lite' },
-  { id: 'gemini-2.5-pro', provider: 'gemini', name: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro' },
-  { id: 'grok-4', provider: 'grok', name: 'grok-4-0709', displayName: 'Grok 4' },
+interface ModelWithAvailability extends Model {
+  available: boolean;
+}
+
+// 環境変数をチェックしてAPIキーの有無を確認
+const checkApiKeyAvailability = () => {
+  // クライアントサイドでは実際の利用可能性を基に設定
+  return {
+    openai: false, // 現在開発中
+    claude: false, // 現在開発中
+    gemini: true,  // 利用可能
+  };
+};
+
+const apiAvailability = checkApiKeyAvailability();
+
+const models: ModelWithAvailability[] = [
+  { id: 'gpt-5', provider: 'openai', name: 'gpt-5', displayName: 'GPT-5', available: apiAvailability.openai },
+  { id: 'gpt-4.1', provider: 'openai', name: 'gpt-4.1', displayName: 'GPT-4.1', available: apiAvailability.openai },
+  { id: 'gpt-4.1-mini', provider: 'openai', name: 'gpt-4.1-mini', displayName: 'GPT-4.1-mini', available: apiAvailability.openai },
+  { id: 'claude-opus-4.1', provider: 'claude', name: 'claude-opus-4.1', displayName: 'Claude Opus 4.1', available: apiAvailability.claude },
+  { id: 'claude-sonnet-4.5', provider: 'claude', name: 'claude-sonnet-4.5', displayName: 'Claude Sonnet 4.5', available: apiAvailability.claude },
+  { id: 'gemini-2.5-pro', provider: 'gemini', name: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', available: apiAvailability.gemini },
+  { id: 'gemini-2.5-flash', provider: 'gemini', name: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', available: apiAvailability.gemini },
 ];
 
 const providerConfig = {
@@ -39,19 +52,14 @@ const providerConfig = {
     badgeColor: 'bg-green-100 text-green-800 border-green-200'
   },
   claude: { 
-    label: 'Claude', 
+    label: 'Anthropic', 
     color: 'text-orange-700',
     badgeColor: 'bg-orange-100 text-orange-800 border-orange-200'
   },
   gemini: { 
-    label: 'Gemini', 
+    label: 'Google DeepMind', 
     color: 'text-blue-700',
     badgeColor: 'bg-blue-100 text-blue-800 border-blue-200'
-  },
-  grok: { 
-    label: 'Grok', 
-    color: 'text-purple-700',
-    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200'
   },
 };
 
@@ -62,7 +70,7 @@ export const ModelSelector = () => {
 
   const handleModelChange = async (modelId: string) => {
     const model = models.find(m => m.id === modelId);
-    if (!model) return;
+    if (!model || !model.available) return;
     
     const newModelConfig = {
       provider: model.provider,
@@ -111,9 +119,21 @@ export const ModelSelector = () => {
               {providerConfig[provider as ModelProvider].label}
             </div>
             {providerModels.map((model) => (
-              <SelectItem key={model.id} value={model.id} className="pl-6">
+              <SelectItem 
+                key={model.id} 
+                value={model.id} 
+                className="pl-6"
+                disabled={!model.available}
+              >
                 <div className="flex items-center justify-between w-full">
-                  <span>{model.displayName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={model.available ? '' : 'opacity-50'}>{model.displayName}</span>
+                    {!model.available && (
+                      <span className="text-xs text-muted-foreground bg-slate-100 px-2 py-0.5 rounded">
+                        開発中
+                      </span>
+                    )}
+                  </div>
                   {selectedModel.id === model.id && (
                     <div className="w-2 h-2 bg-primary rounded-full ml-2"></div>
                   )}

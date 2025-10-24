@@ -41,7 +41,7 @@ const data = {
     },
     {
       title: "エージェント一覧",
-      url: "/agents",
+      url: "/tools",
       icon: Users,
     },
   ],

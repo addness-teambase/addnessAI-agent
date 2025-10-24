@@ -1,18 +1,16 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { AppSidebar } from '@/components/app-sidebar';
-import { MainHeader } from '@/app/components/MainHeader';
 import { ChatInputArea } from '@/app/components/ChatInputArea';
 import { ChatMessage } from './components/ChatMessage';
 import React, { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { Message } from 'ai';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Home, Users, Menu, MessageSquare, PanelLeft, X, Settings } from 'lucide-react';
 import { ModelProvider, useModel } from './components/ModelContext';
+import { ModelSelector } from './components/ModelSelector';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 type UIMessage = Message;
 
@@ -21,10 +19,12 @@ function AppPageContent() {
   const searchParams = useSearchParams();
   const mode = searchParams?.get('mode');
   const isFAQMode = mode === 'faq-auto-response';
+  const router = useRouter();
   
   const [conversationId, setConversationId] = useState<string>(`conv-${Date.now()}`);
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   const [difyMessages, setDifyMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; id: string }>>([]);
   const [difyConversationId, setDifyConversationId] = useState<string>('');
@@ -87,6 +87,7 @@ function AppPageContent() {
                 const data = JSON.parse(line.slice(6));
                 
                 if (data.event === 'message') {
+                  // 文字ごとに追加（ChatGPTスタイル）
                   assistantMessage.content += data.answer;
                   setDifyMessages(prev => 
                     prev.map(msg => 
@@ -177,34 +178,156 @@ function AppPageContent() {
   const currentMessages = isFAQMode ? difyMessages : messages;
 
   return (
-    <SidebarProvider className="h-screen">
-      {isMobile ? (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      {/* Modern Sidebar */}
+      <div className={`${isMobile ? 'hidden' : sidebarOpen ? 'block' : 'hidden'} fixed left-0 top-0 h-full w-72 bg-white/95 backdrop-blur-xl border-r border-slate-200/50 shadow-2xl z-40 transition-all duration-300`}>
+        <div className="h-full flex flex-col">
+          {/* Logo & Brand */}
+          <div className="p-6 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900">アドネスAI</h1>
+                <p className="text-sm text-slate-500">AIエージェント</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex-1 px-4 py-6 space-y-2">
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-blue-600 bg-blue-50 rounded-xl font-medium">
+              <MessageSquare className="w-5 h-5" />
+              <span>チャット</span>
+            </button>
+            <button 
+              onClick={() => router.push('/tools')}
+              className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-200 group"
+            >
+              <Users className="w-5 h-5 group-hover:text-blue-600" />
+              <span className="font-medium">エージェント一覧</span>
+            </button>
+          </div>
+
+          {/* User Profile */}
+          <div className="p-4 border-t border-slate-100">
+            <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                A
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-900">AI Agent</p>
+                <p className="text-xs text-slate-500">ai@addness.com</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobile && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent side="left" className="p-0">
-            <AppSidebar />
+          <SheetContent side="left" className="p-0 w-72">
+            <div className="h-full bg-white/95 backdrop-blur-xl">
+              <div className="h-full flex flex-col">
+                <div className="p-6 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold text-slate-900">アドネスAI</h1>
+                      <p className="text-sm text-slate-500">AIエージェント</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 px-4 py-6 space-y-2">
+                  <button className="w-full flex items-center gap-3 px-4 py-3 text-blue-600 bg-blue-50 rounded-xl font-medium">
+                    <MessageSquare className="w-5 h-5" />
+                    <span>チャット</span>
+                  </button>
+                  <button 
+                    onClick={() => router.push('/tools')}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-200"
+                  >
+                    <Users className="w-5 h-5" />
+                    <span className="font-medium">エージェント一覧</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </SheetContent>
         </Sheet>
-      ) : (
-        <AppSidebar className="hidden md:block" />
       )}
-      <SidebarInset className="flex flex-col h-full">
-        <MainHeader onMenuClick={() => setIsMobileMenuOpen(true)} />
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-          <main className={'w-full flex flex-col overflow-hidden bg-white border-gray-200 transition-all duration-300'}>
-            <div className="w-full flex-1 flex flex-col overflow-y-auto">
-              <div className="max-w-4xl mx-auto w-full px-4 md:px-8 py-6">
+
+      {/* Mobile Header */}
+      {isMobile && (
+        <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-200/50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
+                <MessageSquare className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-semibold text-slate-900">
+                {isFAQMode ? 'FAQ自動応答' : 'チャット'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar Toggle Button */}
+      {!isMobile && (
+        <button 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`fixed top-4 z-50 p-2 bg-white/95 backdrop-blur-xl border border-slate-200/50 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${sidebarOpen ? 'left-[280px]' : 'left-4'}`}
+        >
+          {sidebarOpen ? (
+            <X className="w-5 h-5 text-slate-600" />
+          ) : (
+            <PanelLeft className="w-5 h-5 text-slate-600" />
+          )}
+        </button>
+      )}
+
+      {/* Main Content */}
+      <div className={`${isMobile ? 'pt-0' : sidebarOpen ? 'pl-72' : 'pl-0'} min-h-screen flex flex-col transition-all duration-300`}>
+        <div className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col bg-gradient-to-br from-white/80 to-slate-50/50 backdrop-blur-sm">
+            <div className="w-full flex-1 flex flex-col">
+              <div className="max-w-4xl mx-auto w-full px-4 md:px-8 py-6 flex-1 flex flex-col">
                 <div className={`flex-1 flex flex-col ${currentMessages.length === 0 ? 'justify-center items-center' : 'justify-start'} min-h-0`}>
-                  <div className="space-y-0 pb-4">
+                  <div className="space-y-0 pb-4 flex-1 flex flex-col">
                     {currentMessages.length === 0 && !isOverallLoading && !error && (
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="text-center space-y-4">
-                          <h1 className="text-3xl font-normal text-gray-800">
+                      <div className="flex flex-col items-center justify-center flex-1 text-center space-y-8">
+                        <div className="p-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl shadow-2xl">
+                          <Sparkles className="w-16 h-16 text-white" />
+                        </div>
+                        <div className="space-y-4">
+                          <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
                             {isFAQMode ? 'FAQ自動応答' : 'アドネスAIエージェント'}
                           </h1>
-                          {isFAQMode && (
-                            <p className="text-gray-600">
-                              よくある質問にお答えします。何でもお聞きください。
-                            </p>
+                          <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
+                            {isFAQMode 
+                              ? 'よくある質問にお答えします。何でもお聞きください。' 
+                              : 'あなたの最高のAIパートナー。何でもお気軽にお聞きください。'
+                            }
+                          </p>
+                          {!isFAQMode && (
+                            <div className="flex flex-col items-center gap-4">
+                              <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <Settings className="w-4 h-4" />
+                                <span>AIモデルを選択</span>
+                              </div>
+                              <ModelSelector />
+                            </div>
                           )}
                         </div>
                       </div>
@@ -214,6 +337,13 @@ function AppPageContent() {
                       <ChatMessage
                         key={`${m.id}-${i}`}
                         message={m as UIMessage}
+                        onPreviewOpen={() => {}}
+                        onPreviewClose={() => {}}
+                        onPreviewWidthChange={() => {}}
+                        onBrowserbasePreview={() => {}}
+                        onBrowserAutomationDetected={() => {}}
+                        deepResearchEvents={[]}
+                        isDeepResearchLoading={false}
                       />
                     ))}
 
@@ -262,30 +392,40 @@ function AppPageContent() {
             </div>
           )}
         </div>
-        <ChatInputArea
-          input={input}
-          handleInputChange={handleInputChange}
-          handleSubmit={handleCustomSubmit}
-          isLoading={isOverallLoading}
-          isDeepResearchMode={false}
-          onDeepResearchModeChange={() => {}}
-        />
-      </SidebarInset>
-    </SidebarProvider>
+        {/* Chat Input Area */}
+        <div className="border-t border-slate-200/50 bg-white/95 backdrop-blur-xl">
+          <ChatInputArea
+            input={input}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleCustomSubmit}
+            isLoading={isOverallLoading}
+            isDeepResearchMode={false}
+            onDeepResearchModeChange={() => {}}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function AppPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex items-center gap-3">
-          <Sparkles className="h-6 w-6 text-blue-600 animate-pulse" />
-          <span className="text-gray-600">読み込み中...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="p-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl shadow-2xl mx-auto w-fit">
+            <Sparkles className="w-12 h-12 text-white animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-900">読み込み中...</h2>
+            <p className="text-slate-600">アドネスAIエージェントを起動しています</p>
+          </div>
         </div>
       </div>
     }>
-      <AppPageContent />
+      <ModelProvider>
+        <AppPageContent />
+      </ModelProvider>
     </Suspense>
   );
 }
