@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowUp, Mic, MicOff, ChevronDown, Search, Paperclip, X } from 'lucide-react';
+import Image from 'next/image';
 import {
   Popover,
   PopoverContent,
@@ -273,10 +274,13 @@ export const ChatInputArea = ({
           {/* 画像プレビューセクション */}
           {selectedImage && imagePreviewUrl && (
             <div className="mb-2 inline-block relative">
-              <img
+              <Image
                 src={imagePreviewUrl}
                 alt="添付画像"
-                className="max-h-16 max-w-[200px] rounded-lg border border-gray-200"
+                width={200}
+                height={64}
+                className="max-h-16 max-w-[200px] rounded-lg border border-gray-200 object-cover"
+                unoptimized
               />
               <button
                 type="button"

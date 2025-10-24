@@ -1800,10 +1800,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               } else if (part.type === 'image') {
                 return (
                   <div key={index} className="flex justify-end">
-                    <img 
+                    <Image 
                       src={part.image} 
                       alt="送信画像" 
+                      width={200}
+                      height={200}
                       className="max-w-[200px] max-h-[200px] rounded-xl border border-gray-300 shadow-sm object-cover"
+                      unoptimized
                     />
                   </div>
                 );
@@ -1835,10 +1838,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               if (attachment.contentType?.startsWith('image/') || attachment.type === 'image') {
                 return (
                   <div key={index} className="flex justify-end">
-                    <img 
+                    <Image 
                       src={attachment.url || attachment.image} 
                       alt="送信画像" 
+                      width={200}
+                      height={200}
                       className="max-w-[200px] max-h-[200px] rounded-xl border border-gray-300 shadow-sm object-cover"
+                      unoptimized
                     />
                   </div>
                 );

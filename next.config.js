@@ -7,10 +7,9 @@ const nextConfig = {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'placeholder-for-build',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'placeholder-for-build',
   },
-  // Node.js v24互換性のための設定
+  // Next.js 15対応の設定
   devIndicators: {
-    buildActivity: true,
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-left',
   },
   // swcMinify: false, // Webpackのminifyエラーを回避
   turbopack: {
