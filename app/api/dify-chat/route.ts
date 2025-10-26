@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
         inputs: {},
         query: message,
         response_mode: 'streaming',
-        conversation_id: conversationId || '',
+        // 最初のメッセージでは conversation_id を含めない
+        ...(conversationId && conversationId.length > 0 ? { conversation_id: conversationId } : {}),
         user: user || 'default-user',
         files: [],
       }),

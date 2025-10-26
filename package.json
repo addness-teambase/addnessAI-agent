@@ -9,7 +9,11 @@
     "start": "next start",
     "lint": "next lint",
     "dev:mastra": "mastra dev",
-    "build:mastra": "mastra build"
+    "build:mastra": "mastra build",
+    "check-env": "node scripts/check-env.js",
+    "test-api": "node scripts/test-api.js",
+    "prebuild": "npm run check-env",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",

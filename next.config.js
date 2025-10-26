@@ -2,11 +2,6 @@
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
-  // ビルド時の環境変数デフォルト値
-  env: {
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'placeholder-for-build',
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'placeholder-for-build',
-  },
   // Next.js 15対応の設定
   devIndicators: {
     position: 'bottom-left',

@@ -130,7 +130,7 @@ function AppPageContent() {
     api: '/api/test-gemini',
     id: conversationId,
     body: {
-      model: currentModel,
+      model: currentModel.modelName, // モデル名の文字列を送信
     },
     maxSteps: 5,
   });
@@ -170,7 +170,7 @@ function AppPageContent() {
 
     originalHandleSubmit(e, {
       body: {
-        model: currentModel,
+        model: currentModel.modelName, // モデル名の文字列を送信
       }
     });
   };
