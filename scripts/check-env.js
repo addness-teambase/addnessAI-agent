@@ -61,12 +61,18 @@ function checkEnv() {
 
   console.log('🔍 環境変数チェック開始...\n');
 
-  // .env ファイルの存在確認
+  // .env ファイルの存在確認（Vercelではスキップ）
   const envPath = path.join(process.cwd(), '.env');
-  if (!fs.existsSync(envPath)) {
+  const isVercel = process.env.VERCEL === '1';
+
+  if (!fs.existsSync(envPath) && !isVercel) {
     console.error('❌ .env ファイルが見つかりません');
     console.error('   .env.example をコピーして .env を作成してください\n');
     process.exit(1);
+  }
+
+  if (isVercel) {
+    console.log('🚀 Vercel環境を検出しました。環境変数をチェックします...\n');
   }
 
   envConfig.forEach(({ key, required, description, validate }) => {
