@@ -20,12 +20,12 @@ function AppPageContent() {
   const mode = searchParams?.get('mode');
   const isFAQMode = mode === 'faq-auto-response';
   const router = useRouter();
-  
+
   const [conversationId, setConversationId] = useState<string>(`conv-${Date.now()}`);
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  
+
   const [difyMessages, setDifyMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; id: string }>>([]);
   const [difyConversationId, setDifyConversationId] = useState<string>('');
   const [isDifyLoading, setIsDifyLoading] = useState(false);
@@ -35,16 +35,16 @@ function AppPageContent() {
 
   const sendDifyMessage = async (message: string) => {
     setIsDifyLoading(true);
-    
+
     try {
       const userMessage = {
         role: 'user' as const,
         content: message,
         id: `user-${Date.now()}`
       };
-      
+
       setDifyMessages(prev => [...prev, userMessage]);
-      
+
       const response = await fetch('/api/dify-chat', {
         method: 'POST',
         headers: {
@@ -63,35 +63,35 @@ function AppPageContent() {
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      
+
       let assistantMessage = {
         role: 'assistant' as const,
         content: '',
         id: `assistant-${Date.now()}`
       };
-      
+
       setDifyMessages(prev => [...prev, assistantMessage]);
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
-          
+
           if (done) break;
-          
+
           const chunk = decoder.decode(value);
           const lines = chunk.split('\n');
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.slice(6));
-                
+
                 if (data.event === 'message') {
                   // 文字ごとに追加（ChatGPTスタイル）
                   assistantMessage.content += data.answer;
-                  setDifyMessages(prev => 
-                    prev.map(msg => 
-                      msg.id === assistantMessage.id 
+                  setDifyMessages(prev =>
+                    prev.map(msg =>
+                      msg.id === assistantMessage.id
                         ? { ...msg, content: assistantMessage.content }
                         : msg
                     )
@@ -189,8 +189,7 @@ function AppPageContent() {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">アドネスAI</h1>
-                <p className="text-sm text-slate-500">AIエージェント</p>
+                <h1 className="text-xl font-bold text-slate-900">Addness AI Agent</h1>
               </div>
             </div>
           </div>
@@ -201,7 +200,7 @@ function AppPageContent() {
               <MessageSquare className="w-5 h-5" />
               <span>チャット</span>
             </button>
-            <button 
+            <button
               onClick={() => router.push('/tools')}
               className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-200 group"
             >
@@ -217,7 +216,7 @@ function AppPageContent() {
                 A
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-900">AI Agent</p>
+                <p className="text-sm font-medium text-slate-900">AIエージェント</p>
                 <p className="text-xs text-slate-500">ai@addness.com</p>
               </div>
             </div>
@@ -237,8 +236,7 @@ function AppPageContent() {
                       <Sparkles className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h1 className="text-xl font-bold text-slate-900">アドネスAI</h1>
-                      <p className="text-sm text-slate-500">AIエージェント</p>
+                      <h1 className="text-xl font-bold text-slate-900">Addness AI Agent</h1>
                     </div>
                   </div>
                 </div>
@@ -247,7 +245,7 @@ function AppPageContent() {
                     <MessageSquare className="w-5 h-5" />
                     <span>チャット</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => router.push('/tools')}
                     className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
@@ -265,7 +263,7 @@ function AppPageContent() {
       {isMobile && (
         <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-200/50 px-4 py-3">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
             >
@@ -285,7 +283,7 @@ function AppPageContent() {
 
       {/* Sidebar Toggle Button */}
       {!isMobile && (
-        <button 
+        <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className={`fixed top-4 z-50 p-2 bg-white/95 backdrop-blur-xl border border-slate-200/50 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${sidebarOpen ? 'left-[280px]' : 'left-4'}`}
         >
@@ -311,12 +309,14 @@ function AppPageContent() {
                           <Sparkles className="w-16 h-16 text-white" />
                         </div>
                         <div className="space-y-4">
-                          <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-                            {isFAQMode ? 'FAQ自動応答' : 'アドネスAIエージェント'}
+                          <h1 className="text-5xl font-bold leading-[1.2] pb-1">
+                            <span className="bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent inline-block py-1">
+                              {isFAQMode ? 'FAQ自動応答' : 'Addness AI Agent'}
+                            </span>
                           </h1>
                           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
-                            {isFAQMode 
-                              ? 'よくある質問にお答えします。何でもお聞きください。' 
+                            {isFAQMode
+                              ? 'よくある質問にお答えします。何でもお聞きください。'
                               : 'あなたの最高のAIパートナー。何でもお気軽にお聞きください。'
                             }
                           </p>
@@ -337,11 +337,11 @@ function AppPageContent() {
                       <ChatMessage
                         key={`${m.id}-${i}`}
                         message={m as UIMessage}
-                        onPreviewOpen={() => {}}
-                        onPreviewClose={() => {}}
-                        onPreviewWidthChange={() => {}}
-                        onBrowserbasePreview={() => {}}
-                        onBrowserAutomationDetected={() => {}}
+                        onPreviewOpen={() => { }}
+                        onPreviewClose={() => { }}
+                        onPreviewWidthChange={() => { }}
+                        onBrowserbasePreview={() => { }}
+                        onBrowserAutomationDetected={() => { }}
                         deepResearchEvents={[]}
                         isDeepResearchLoading={false}
                       />
@@ -359,7 +359,7 @@ function AppPageContent() {
                         return "h-5 w-5 text-gray-600 animate-spin";
                       };
 
-                      return statusText && statusIcon && !hasAssistantStartedResponse && ( 
+                      return statusText && statusIcon && !hasAssistantStartedResponse && (
                         <div className="w-full py-4">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-gray-100 rounded-lg">
@@ -381,7 +381,7 @@ function AppPageContent() {
           {error && (
             <div className="fixed top-4 right-4 z-50 p-4 max-w-sm w-auto bg-red-100 border border-red-200 text-red-700 rounded-lg shadow-lg">
               <h4 className="font-bold mb-2">エラーが発生しました</h4>
-              <p className="text-sm">Error: {error.message}</p>
+              <p className="text-sm">エラー: {error.message}</p>
               <p className="text-xs mt-1 text-red-600">APIキーまたはネットワーク接続を確認してください。</p>
               <button
                 onClick={() => window.location.reload()}
@@ -400,7 +400,7 @@ function AppPageContent() {
             handleSubmit={handleCustomSubmit}
             isLoading={isOverallLoading}
             isDeepResearchMode={false}
-            onDeepResearchModeChange={() => {}}
+            onDeepResearchModeChange={() => { }}
           />
         </div>
       </div>
@@ -418,7 +418,7 @@ export default function AppPage() {
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-900">読み込み中...</h2>
-            <p className="text-slate-600">アドネスAIエージェントを起動しています</p>
+            <p className="text-slate-600">Addness AI Agent を起動しています</p>
           </div>
         </div>
       </div>

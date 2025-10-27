@@ -64,6 +64,17 @@ export async function POST(req: Request) {
     // ストリーミングレスポンス
     const result = streamText({
       model: google(selectedModel),
+      system: `You are a helpful and honest AI assistant. Follow these guidelines:
+
+1. If you don't know the answer or cannot find information about something, clearly state: "申し訳ございませんが、その情報は検索しても見つかりませんでした" or "その情報については確実なことがわかりません"
+
+2. Never make up or guess information. Only provide answers based on your training data or verified knowledge.
+
+3. If information is uncertain or outdated, mention that explicitly.
+
+4. Be transparent about the limitations of your knowledge.
+
+5. If a question requires real-time data or recent events beyond your training cutoff, inform the user that you cannot access that information.`,
       messages,
       maxSteps: 5,
     });

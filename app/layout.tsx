@@ -9,8 +9,8 @@ const ClientStagewiseToolbar = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: "アドネスAIエージェント",
-  description: "アドネスAIエージェント - ビジネスを加速するAIアシスタント",
+  title: "Addness AI Agent",
+  description: "Addness AI Agent - ビジネスを加速するAIアシスタント",
 };
 
 export default function RootLayout({

@@ -204,15 +204,14 @@ export default function ToolsPage() {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">アドネスAI</h1>
-                <p className="text-sm text-slate-500">AIエージェント</p>
+                <h1 className="text-xl font-bold text-slate-900">Addness AI Agent</h1>
               </div>
             </div>
           </div>
 
           {/* Navigation */}
           <div className="flex-1 px-4 py-6 space-y-2">
-            <button 
+            <button
               onClick={() => router.push('/')}
               className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-200 group"
             >
@@ -232,7 +231,7 @@ export default function ToolsPage() {
                 A
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-900">AI Agent</p>
+                <p className="text-sm font-medium text-slate-900">AIエージェント</p>
                 <p className="text-xs text-slate-500">ai@addness.com</p>
               </div>
             </div>
@@ -253,13 +252,12 @@ export default function ToolsPage() {
                       <Sparkles className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h1 className="text-xl font-bold text-slate-900">アドネスAI</h1>
-                      <p className="text-sm text-slate-500">AIエージェント</p>
+                      <h1 className="text-xl font-bold text-slate-900">Addness AI Agent</h1>
                     </div>
                   </div>
                 </div>
                 <div className="flex-1 px-4 py-6 space-y-2">
-                  <button 
+                  <button
                     onClick={() => router.push('/')}
                     className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
@@ -281,7 +279,7 @@ export default function ToolsPage() {
       {isMobile && (
         <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-200/50 px-4 py-3">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
             >
@@ -299,7 +297,7 @@ export default function ToolsPage() {
 
       {/* Sidebar Toggle Button */}
       {!isMobile && (
-        <button 
+        <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className={`fixed top-4 z-50 p-2 bg-white/95 backdrop-blur-xl border border-slate-200/50 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${sidebarOpen ? 'left-[280px]' : 'left-4'}`}
         >
@@ -320,8 +318,10 @@ export default function ToolsPage() {
               <Sparkles className="w-4 h-4" />
               <span>20種類のAIエージェント</span>
             </div>
-            <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4 bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-              アドネスAIエージェント
+            <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4 leading-[1.2] pb-1">
+              <span className="bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent inline-block py-1">
+                Addness AI Agent
+              </span>
             </h1>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               ビジネスを加速する次世代AIエージェント。作業効率を劇的に向上させる革新的なソリューション。

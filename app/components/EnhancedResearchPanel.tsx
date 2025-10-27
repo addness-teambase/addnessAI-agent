@@ -25,7 +25,7 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
     executeResearch,
     resetResearch
   } = useEnhancedDeepResearch();
-  
+
   const isLoading = status === 'planning' || status === 'researching';
   const processedEvents = progress.map((step, index) => ({
     id: `step-${index}`,
@@ -47,7 +47,7 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
     generateCitations: true,
     synthesisType: 'analytical' as const,
   });
-  
+
   const [expandedSections, setExpandedSections] = useState({
     findings: true,
     conflicts: false,
@@ -58,7 +58,7 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-    
+
     await startResearch(query);
     await executeResearch();
   };
@@ -118,7 +118,7 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
                 disabled={isLoading}
               />
             </div>
-            
+
             {/* Research Options */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -135,7 +135,7 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
                   <option value="complex">Complex</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-2">Synthesis Type</label>
                 <select
@@ -150,7 +150,7 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
                 </select>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <label className="flex items-center">
                 <input
@@ -162,7 +162,7 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
                 />
                 Source Validation
               </label>
-              
+
               <label className="flex items-center">
                 <input
                   type="checkbox"
@@ -174,14 +174,14 @@ export const EnhancedResearchPanel: React.FC<EnhancedResearchPanelProps> = ({ cl
                 Generate Citations
               </label>
             </div>
-            
+
             <div className="flex gap-2">
               <Button type="submit" disabled={isLoading || !query.trim()} className="flex-1">
-                {isLoading ? 'Researching...' : 'Start Enhanced Research'}
+                {isLoading ? '調査中...' : 'リサーチを開始'}
               </Button>
               {(result || error) && (
                 <Button type="button" variant="outline" onClick={resetResearch}>
-                  Reset
+                  リセット
                 </Button>
               )}
             </div>

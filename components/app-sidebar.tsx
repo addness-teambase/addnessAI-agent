@@ -29,8 +29,8 @@ import {
 
 const data = {
   user: {
-    name: "AI Agent",
-    email: "ai@presentation.com",
+    name: "AIエージェント",
+    email: "ai@addness.com",
     avatar: "/avatars/ai-agent.jpg",
   },
   navMain: [
@@ -71,7 +71,7 @@ function AppSidebarContent() {
             >
               <a href="/">
                 <ArrowUpCircle className="h-5 w-5" />
-                <span className="text-base font-semibold">アドネスAIエージェント</span>
+                <span className="text-base font-semibold">Addness AI Agent</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -79,7 +79,7 @@ function AppSidebarContent() {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        
+
         {/* FAQモード時のみ表示 */}
         {isFAQMode && (
           <>
@@ -122,7 +122,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 >
                   <a href="/">
                     <ArrowUpCircle className="h-5 w-5" />
-                    <span className="text-base font-semibold">アドネスAIエージェント</span>
+                    <span className="text-base font-semibold">Addness AI Agent</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
