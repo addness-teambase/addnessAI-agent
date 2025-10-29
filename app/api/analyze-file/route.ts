@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import * as XLSX from 'xlsx';
-import pdfParse from 'pdf-parse';
 
 // Node.js runtimeを使用（xlsxやpdf-parseが必要なため）
 export const runtime = 'nodejs';
@@ -33,6 +32,9 @@ async function parseExcelToText(buffer: ArrayBuffer): Promise<string> {
  * PDFファイルをテキスト化
  */
 async function parsePDFToText(buffer: ArrayBuffer): Promise<string> {
+  // 動的インポートでpdf-parseを読み込み（ESMビルド問題を回避）
+  // pdf-parseはCommonJS形式なのでany型でキャスト
+  const pdfParse: any = await import('pdf-parse');
   const data = await pdfParse(Buffer.from(buffer));
   return data.text;
 }
