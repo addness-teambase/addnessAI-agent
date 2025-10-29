@@ -23,7 +23,7 @@ function AppPageContent() {
   const isPDFAnalysisMode = mode === 'pdf-analysis';
   const isExcelAnalysisMode = mode === 'excel-analysis';
   const isFileAnalysisMode = isPDFAnalysisMode || isExcelAnalysisMode;
-  const isDifyMode = isFAQMode; // FAQモードのみDifyを使用
+  const isDifyMode = isFAQMode || isContractReviewMode; // FAQと契約書レビューがDifyを使用
   const router = useRouter();
 
   const [conversationId, setConversationId] = useState<string>(`conv-${Date.now()}`);
@@ -132,30 +132,46 @@ function AppPageContent() {
     setStatusIcon(() => Sparkles);
 
     try {
-      let finalMessage = message;
+      let fileIds: Array<{ type: string; transfer_method: string; upload_file_id: string }> = [];
 
-      // ファイルがある場合は、まず分析
+      // ファイルがある場合は、Difyにアップロード
       if (file) {
-        console.log('[Dify] Analyzing file first:', file.name);
-        setStatusText('ファイルを分析中...');
+        console.log('[Dify] Uploading file to Dify:', file.name);
+        setStatusText('ファイルをアップロード中...');
 
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('mode', mode || '');
 
-        const analysisResponse = await fetch('/api/analyze-file', {
+        const uploadResponse = await fetch('/api/dify-upload', {
           method: 'POST',
           body: formData,
         });
 
-        const analysisData = await analysisResponse.json();
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('[Dify] Upload failed:', errorText);
+          throw new Error(`ファイルのアップロードに失敗しました: ${errorText}`);
+        }
 
-        if (analysisData.success) {
-          // ファイル分析結果を含めたメッセージを作成
-          finalMessage = message
-            ? `【添付ファイル】${file.name}\n\n【ファイル内容】\n${analysisData.analysis}\n\n【質問】\n${message}`
-            : `【添付ファイル】${file.name}\n\n【ファイル内容】\n${analysisData.analysis}`;
+        const uploadData = await uploadResponse.json();
+        console.log('[Dify] Upload response:', uploadData);
+
+        if (uploadData.id) {
+          // Difyのファイル形式に変換
+          fileIds = [{
+            type: 'document',
+            transfer_method: 'local_file',
+            upload_file_id: uploadData.id,
+          }];
+          console.log('[Dify] File uploaded successfully:', {
+            id: uploadData.id,
+            name: file.name,
+            fileIds: fileIds,
+          });
         } else {
-          throw new Error(analysisData.details || analysisData.error || 'ファイル分析に失敗しました');
+          console.error('[Dify] No file ID in response:', uploadData);
+          throw new Error(uploadData.error || 'ファイルのアップロードに失敗しました（IDが返されませんでした）');
         }
       }
 
@@ -168,11 +184,26 @@ function AppPageContent() {
       setDifyMessages(prev => [...prev, userMessage]);
       setStatusText('AIが応答中...');
 
+      // メッセージとファイルの両方がない場合はエラー
+      if (!message.trim() && fileIds.length === 0) {
+        throw new Error('メッセージまたはファイルが必要です');
+      }
+
+      const requestPayload = {
+        message: message || 'このファイルをレビューしてください',
+        conversationId: difyConversationId,
+        user: 'user',
+        mode: mode,
+        files: fileIds, // DifyにアップロードしたファイルIDを送信
+      };
+
       console.log('[Dify] Sending message:', {
         mode,
-        messageLength: finalMessage.length,
+        messageLength: message.length,
         conversationId: difyConversationId,
         hasFile: !!file,
+        fileIdsCount: fileIds.length,
+        payload: requestPayload,
       });
 
       const response = await fetch('/api/dify-chat', {
@@ -180,18 +211,34 @@ function AppPageContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: finalMessage, // ファイル分析結果を含むメッセージ
-          conversationId: difyConversationId,
-          user: 'user',
-          mode: mode,
-        }),
+        body: JSON.stringify(requestPayload),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[Dify Chat] Error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+        console.error('[Dify Chat] Error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+          requestPayload: requestPayload,
+        });
+
+        // エラーメッセージをパース
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.details) {
+            const details = typeof errorData.details === 'string'
+              ? JSON.parse(errorData.details)
+              : errorData.details;
+            errorMessage = details.message || errorData.error || errorMessage;
+          }
+        } catch (e) {
+          // JSON parse error - use text as is
+          errorMessage = errorText || errorMessage;
+        }
+
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();
@@ -241,19 +288,30 @@ function AppPageContent() {
       }
     } catch (error) {
       console.error('[Dify] Chat error:', error);
+      console.error('[Dify] Stack trace:', error instanceof Error ? error.stack : 'No stack');
+
       let errorContent = 'エラーが発生しました。';
 
       if (error instanceof Error) {
-        console.error('[Dify] Error details:', error.message);
+        console.error('[Dify] Error details:', {
+          message: error.message,
+          name: error.name,
+        });
 
-        if (error.message.includes('invalid_param')) {
-          errorContent = 'パラメータエラー：ファイル分析結果の送信に失敗しました。開発者に連絡してください。';
+        if (error.message.includes('アップロード')) {
+          errorContent = '⚠️ ファイルのアップロードに失敗しました。\n\n原因：\n- ファイル形式がサポートされていない可能性があります\n- ファイルサイズが大きすぎる可能性があります\n- ネットワークエラーの可能性があります\n\nもう一度お試しください。';
+        } else if (error.message.includes('docs is required')) {
+          errorContent = '⚠️ Dify設定エラー：ファイルパラメータが不足しています。\n\n管理者に以下を確認してください：\n- Difyワークフローで「docs」入力変数が正しく設定されているか\n- ファイルアップロード機能が有効になっているか';
+        } else if (error.message.includes('invalid_param')) {
+          errorContent = '⚠️ パラメータエラー：Dify APIへのリクエストが正しくありません。\n\n管理者に連絡してください。\n詳細: ' + error.message;
         } else if (error.message.includes('400')) {
-          errorContent = 'リクエストエラー（400）：送信データに問題があります。開発者に連絡してください。';
+          errorContent = '⚠️ リクエストエラー（400）：送信データに問題があります。\n\n詳細: ' + error.message + '\n\n管理者に連絡してください。';
         } else if (error.message.includes('401') || error.message.includes('403')) {
-          errorContent = 'API認証エラーです。管理者にお問い合わせください。';
+          errorContent = '⚠️ API認証エラーです。\n\nAPIキーが正しく設定されているか管理者に確認してください。';
+        } else if (error.message.includes('メッセージまたはファイルが必要')) {
+          errorContent = '⚠️ メッセージを入力するか、ファイルを添付してください。';
         } else {
-          errorContent = `エラー: ${error.message}`;
+          errorContent = `⚠️ エラーが発生しました\n\n${error.message}\n\n詳細はコンソールログを確認してください。`;
         }
       }
 
