@@ -1833,14 +1833,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               </div>
             </div>
             
-            {/* attachments情報から画像を表示 */}
+            {/* attachments情報から画像・ファイルを表示 */}
             {hasAttachments && attachments.map((attachment: any, index: number) => {
-              if (attachment.contentType?.startsWith('image/') || attachment.type === 'image') {
+              const contentType = attachment.contentType || attachment.type || '';
+              const fileName = attachment.name || attachment.fileName || 'ファイル';
+
+              // 画像の場合
+              if (contentType.startsWith('image/')) {
                 return (
                   <div key={index} className="flex justify-end">
-                    <Image 
-                      src={attachment.url || attachment.image} 
-                      alt="送信画像" 
+                    <Image
+                      src={attachment.url || attachment.image}
+                      alt="送信画像"
                       width={200}
                       height={200}
                       className="max-w-[200px] max-h-[200px] rounded-xl border border-gray-300 shadow-sm object-cover"
@@ -1849,7 +1853,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   </div>
                 );
               }
-              return null;
+
+              // PDF・文書ファイルの場合
+              return (
+                <div key={index} className="flex justify-end">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-700 rounded-xl border border-gray-600 text-white text-sm">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="font-medium">{fileName}</span>
+                    <span className="text-xs text-gray-400">({contentType.split('/')[1]?.toUpperCase() || 'FILE'})</span>
+                  </div>
+                </div>
+              );
             })}
           </div>
         </div>

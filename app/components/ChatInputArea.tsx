@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowUp, Mic, MicOff, ChevronDown, Search, Paperclip, X } from 'lucide-react';
+import { ArrowUp, Mic, MicOff, ChevronDown, Search, Paperclip, X, FileText } from 'lucide-react';
 import Image from 'next/image';
 import {
   Popover,
@@ -32,6 +32,9 @@ interface ChatInputAreaProps {
   isLoading: boolean;
   isDeepResearchMode?: boolean;
   onDeepResearchModeChange?: (enabled: boolean) => void;
+  isDifyMode?: boolean; // Difyモードかどうか
+  isFileAnalysisMode?: boolean; // ファイル分析モードかどうか
+  fileAnalysisType?: 'pdf' | 'excel'; // ファイル分析のタイプ
 }
 
 // ツールオプションの型定義
@@ -63,7 +66,10 @@ export const ChatInputArea = ({
   handleSubmit,
   isLoading,
   isDeepResearchMode = false,
-  onDeepResearchModeChange
+  onDeepResearchModeChange,
+  isDifyMode = false,
+  isFileAnalysisMode = false,
+  fileAnalysisType
 }: ChatInputAreaProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
@@ -71,8 +77,8 @@ export const ChatInputArea = ({
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [lastEnterTime, setLastEnterTime] = useState<number>(0);
   const [enterCount, setEnterCount] = useState<number>(0);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null); // 画像だけでなく全てのファイルを扱う
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null); // 画像の場合のみ使用
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -169,21 +175,58 @@ export const ChatInputArea = ({
     fileInputRef.current?.click();
   };
 
-  // 画像が選択されたときのハンドラ
+  // ファイルが選択されたときのハンドラ
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
 
-      // ファイルサイズの検証（10MB制限）
-      if (file.size > 10 * 1024 * 1024) {
-        alert('ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。');
+      // ファイルサイズの検証（15MB制限 - Geminiのマルチモーダル対応）
+      if (file.size > 15 * 1024 * 1024) {
+        alert('ファイルサイズが大きすぎます。15MB以下のファイルを選択してください。');
         return;
       }
 
-      // MIME typeの検証
-      if (!file.type.startsWith('image/')) {
-        alert('画像ファイルを選択してください。');
-        return;
+      // ファイル分析モードの場合は特定のファイルタイプのみ許可
+      if (isFileAnalysisMode) {
+        if (fileAnalysisType === 'pdf') {
+          if (file.type !== 'application/pdf') {
+            alert('PDFファイルのみアップロードできます。');
+            return;
+          }
+        } else if (fileAnalysisType === 'excel') {
+          const excelTypes = [
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/csv',
+          ];
+          const isExcelFile = excelTypes.includes(file.type) ||
+                             file.name.endsWith('.xlsx') ||
+                             file.name.endsWith('.xls') ||
+                             file.name.endsWith('.csv');
+          if (!isExcelFile) {
+            alert('Excel/CSVファイルのみアップロードできます（.xlsx, .xls, .csv）。');
+            return;
+          }
+        }
+      } else {
+        // 通常モード: 対応ファイルタイプの検証
+        const allowedTypes = [
+          'image/',
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+          'application/msword', // .doc
+          'text/plain',
+          'text/markdown',
+          'text/csv',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        ];
+
+        const isAllowedType = allowedTypes.some(type => file.type.startsWith(type) || file.type === type);
+
+        if (!isAllowedType) {
+          alert('対応していないファイル形式です。画像、PDF、Word、Excel、テキストファイルを選択してください。');
+          return;
+        }
       }
 
       setSelectedImage(file);
@@ -249,9 +292,22 @@ export const ChatInputArea = ({
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // 入力がない場合は送信しない
-    if (!input.trim()) {
-      return;
+    // ファイル分析モードの場合: ファイルが必須
+    if (isFileAnalysisMode) {
+      if (!selectedImage) {
+        return;
+      }
+      // プロンプトは任意
+    } else if (isDifyMode) {
+      // Difyモード: ファイルまたは入力のいずれかが必須
+      if (!selectedImage && !input.trim()) {
+        return;
+      }
+    } else {
+      // 通常モード: 入力がない場合は送信しない
+      if (!input.trim()) {
+        return;
+      }
     }
 
     // そのまま送信
@@ -260,7 +316,7 @@ export const ChatInputArea = ({
     // 送信後に画像をクリア
     setSelectedImage(null);
     setImagePreviewUrl(null);
-    
+
     // textareaの高さを初期値にリセット
     if (textareaRef.current) {
       textareaRef.current.style.height = '52px';
@@ -271,90 +327,49 @@ export const ChatInputArea = ({
     <div className="bg-white/80 backdrop-blur-md">
       <div className="safe-areas">
         <div className="max-w-4xl mx-auto px-4 md:px-8 py-3 md:py-4">
-          {/* 画像プレビューセクション */}
-          {selectedImage && imagePreviewUrl && (
+          {/* ファイルプレビューセクション */}
+          {selectedImage && (
             <div className="mb-2 inline-block relative">
-              <Image
-                src={imagePreviewUrl}
-                alt="添付画像"
-                width={200}
-                height={64}
-                className="max-h-16 max-w-[200px] rounded-lg border border-gray-200 object-cover"
-                unoptimized
-              />
-              <button
-                type="button"
-                onClick={() => setSelectedImage(null)}
-                className="absolute -top-1 -right-1 p-1 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors border border-gray-200"
-                title="画像を削除"
-              >
-                <X className="h-3 w-3 text-gray-600" />
-              </button>
+              {selectedImage.type.startsWith('image/') && imagePreviewUrl ? (
+                // 画像の場合: サムネイル表示
+                <>
+                  <Image
+                    src={imagePreviewUrl}
+                    alt="添付画像"
+                    width={200}
+                    height={64}
+                    className="max-h-16 max-w-[200px] rounded-lg border border-gray-200 object-cover"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute -top-1 -right-1 p-1 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors border border-gray-200"
+                    title="ファイルを削除"
+                  >
+                    <X className="h-3 w-3 text-gray-600" />
+                  </button>
+                </>
+              ) : (
+                // 画像以外: ファイル名とアイコン表示
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                  <FileText className="h-5 w-5 text-gray-600" />
+                  <span className="text-sm text-gray-700 max-w-[200px] truncate">{selectedImage.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedImage(null)}
+                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                    title="ファイルを削除"
+                  >
+                    <X className="h-3 w-3 text-gray-600" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           <form onSubmit={handleFormSubmit}>
             <div className="relative flex items-center bg-gray-100 rounded-2xl md:rounded-3xl border border-gray-200 focus-within:ring-1 focus-within:ring-gray-300 focus-within:border-gray-300 transition-all shadow-sm">
-              {/* ツール選択ドロップダウン */}
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="hidden md:flex items-center gap-1 px-3 py-2 ml-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-2xl transition-colors"
-                    disabled={isLoading}
-                  >
-                    {selectedTool ? (
-                      <>
-                        {toolOptions.find(opt => opt.value === selectedTool)?.icon}
-                        <span className="text-xs font-medium">
-                          {isDeepResearchMode && (selectedTool === 'deep-research' || selectedTool === 'enhanced-research')
-                            ? selectedTool === 'enhanced-research' ? 'Enhanced Research (有効)' : 'Deep Research (有効)'
-                            : toolOptions.find(opt => opt.value === selectedTool)?.label}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-xs">ツール</span>
-                      </>
-                    )}
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="ツールを検索..." />
-                    <CommandList>
-                      <CommandEmpty>ツールが見つかりません</CommandEmpty>
-                      <CommandGroup>
-                        {toolOptions.map((option) => (
-                          <CommandItem
-                            key={option.value}
-                            value={option.value}
-                            onSelect={(currentValue) => {
-                              const newSelectedTool = currentValue === selectedTool ? '' : currentValue;
-                              setSelectedTool(newSelectedTool);
-                              setOpen(false);
-
-                              // Deep Researchモードの状態を更新
-                              if (onDeepResearchModeChange) {
-                                onDeepResearchModeChange(newSelectedTool === 'deep-research' || newSelectedTool === 'enhanced-research');
-                              }
-                            }}
-                            className="flex items-start gap-3 p-3"
-                          >
-                            <div className="mt-0.5">{option.icon}</div>
-                            <div className="flex-1">
-                              <div className="font-medium text-sm">{option.label}</div>
-                              <div className="text-xs text-gray-500">{option.description}</div>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -363,15 +378,11 @@ export const ChatInputArea = ({
                 onCompositionStart={handleCompositionStart}
                 onCompositionEnd={handleCompositionEnd}
                 placeholder={
-                  isDeepResearchMode
-                    ? selectedTool === 'enhanced-research'
-                      ? "Enhanced Research で高度な調査を実行します..."
-                      : "Deep Researchで詳細調査します..."
-                    : selectedTool
-                      ? `${toolOptions.find(opt => opt.value === selectedTool)?.label}について質問してください`
-                      : selectedImage
-                        ? "画像を添付しました。メッセージを入力してください。"
-                        : "質問してみましょう"
+                  isFileAnalysisMode
+                    ? fileAnalysisType === 'pdf'
+                      ? "PDFを添付して質問してください"
+                      : "Excel/CSVを添付して質問してください"
+                    : "質問してみましょう"
                 }
                 className="flex-1 p-3 pl-4 pr-20 md:pr-24 bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none text-base resize-none overflow-y-auto"
                 style={{
@@ -383,23 +394,39 @@ export const ChatInputArea = ({
                 rows={1}
               />
               <div className="absolute right-2 flex items-center gap-1">
-                {/* 画像添付ボタン */}
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  style={{ display: 'none' }}
-                  onChange={handleImageSelect}
-                />
-                <button
-                  type="button"
-                  onClick={triggerFileInput}
-                  disabled={isLoading}
-                  className="hidden md:flex p-2 rounded-full transition-colors text-gray-600 bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  title="画像を添付"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </button>
+                {/* ファイル添付ボタン（全モードで表示） */}
+                <>
+                  <input
+                    type="file"
+                    accept={
+                      isFileAnalysisMode
+                        ? fileAnalysisType === 'pdf'
+                          ? '.pdf,application/pdf'
+                          : fileAnalysisType === 'excel'
+                          ? '.xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
+                          : 'image/*,application/pdf,.pdf,.docx,.doc,.txt,.md,.csv,.xlsx'
+                        : 'image/*,application/pdf,.pdf,.docx,.doc,.txt,.md,.csv,.xlsx'
+                    }
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleImageSelect}
+                  />
+                  <button
+                    type="button"
+                    onClick={triggerFileInput}
+                    disabled={isLoading}
+                    className="hidden md:flex p-2 rounded-full transition-colors text-gray-600 bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    title={
+                      isFileAnalysisMode
+                        ? fileAnalysisType === 'pdf'
+                          ? 'PDFファイルを添付'
+                          : 'Excel/CSVファイルを添付'
+                        : 'ファイルを添付（画像、PDF、Word、Excel等）'
+                    }
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                </>
 
                 {/* 音声入力ボタン */}
                 {isSupported && (
@@ -420,7 +447,15 @@ export const ChatInputArea = ({
                 {/* 送信ボタン */}
                 <button
                   type="submit"
-                  disabled={isLoading || !input.trim()}
+                  disabled={
+                    isLoading ||
+                    (isFileAnalysisMode
+                      ? !selectedImage
+                      : isDifyMode
+                        ? !selectedImage && !input.trim()
+                        : !input.trim()
+                    )
+                  }
                   className="p-2.5 md:p-2 text-white bg-black rounded-full hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   <ArrowUp className="h-5 w-5" />

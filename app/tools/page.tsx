@@ -151,6 +151,27 @@ const agentCategories: AgentCategory[] = [
       },
     ],
   },
+  {
+    id: 'data-analysis',
+    name: 'データ分析系',
+    icon: <BarChart3 className="w-5 h-5" />,
+    agents: [
+      {
+        name: 'PDF分析',
+        description: 'PDF→詳細分析レポート',
+        icon: <FileText className="w-6 h-6 text-red-600" />,
+        category: 'データ分析系',
+        link: '/?mode=pdf-analysis',
+      },
+      {
+        name: 'Excel分析',
+        description: 'Excel/CSV→データ分析',
+        icon: <FileSpreadsheet className="w-6 h-6 text-green-600" />,
+        category: 'データ分析系',
+        link: '/?mode=excel-analysis',
+      },
+    ],
+  },
 ];
 
 export default function ToolsPage() {
@@ -161,9 +182,9 @@ export default function ToolsPage() {
   const router = useRouter();
 
   const handleCardClick = (link: string) => {
-    if (link.includes('mode=faq-auto-response')) {
+    if (link.includes('mode=faq-auto-response') || link.includes('mode=contract-review')) {
       router.push(link);
-      // FAQモードの場合はリロードして状態をリセット
+      // Difyモード（FAQ、契約書レビュー）の場合はリロードして状態をリセット
       setTimeout(() => window.location.reload(), 100);
     } else {
       router.push(link);
@@ -186,6 +207,7 @@ export default function ToolsPage() {
       'sales-marketing': 'bg-blue-100 text-blue-700 hover:bg-blue-200',
       'customer-support': 'bg-green-100 text-green-700 hover:bg-green-200',
       'business-efficiency': 'bg-purple-100 text-purple-700 hover:bg-purple-200',
+      'data-analysis': 'bg-amber-100 text-amber-700 hover:bg-amber-200',
       'ecommerce': 'bg-orange-100 text-orange-700 hover:bg-orange-200',
       'manufacturing': 'bg-red-100 text-red-700 hover:bg-red-200',
     };
@@ -316,7 +338,7 @@ export default function ToolsPage() {
           <div className="mb-12 text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-6">
               <Sparkles className="w-4 h-4" />
-              <span>20種類のAIエージェント</span>
+              <span>22種類のAIエージェント</span>
             </div>
             <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4 leading-[1.2] pb-1">
               <span className="bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent inline-block py-1">

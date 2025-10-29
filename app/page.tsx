@@ -19,6 +19,11 @@ function AppPageContent() {
   const searchParams = useSearchParams();
   const mode = searchParams?.get('mode');
   const isFAQMode = mode === 'faq-auto-response';
+  const isContractReviewMode = mode === 'contract-review';
+  const isPDFAnalysisMode = mode === 'pdf-analysis';
+  const isExcelAnalysisMode = mode === 'excel-analysis';
+  const isFileAnalysisMode = isPDFAnalysisMode || isExcelAnalysisMode;
+  const isDifyMode = isFAQMode; // FAQモードのみDifyを使用
   const router = useRouter();
 
   const [conversationId, setConversationId] = useState<string>(`conv-${Date.now()}`);
@@ -30,20 +35,145 @@ function AppPageContent() {
   const [difyConversationId, setDifyConversationId] = useState<string>('');
   const [isDifyLoading, setIsDifyLoading] = useState(false);
 
+  const [fileAnalysisMessages, setFileAnalysisMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; id: string }>>([]);
+  const [isFileAnalysisLoading, setIsFileAnalysisLoading] = useState(false);
+
   const [statusText, setStatusText] = useState<string>('');
   const [statusIcon, setStatusIcon] = useState<React.ComponentType<any> | null>(null);
 
-  const sendDifyMessage = async (message: string) => {
-    setIsDifyLoading(true);
+  const sendFileAnalysisMessage = async (file: File, prompt: string) => {
+    setIsFileAnalysisLoading(true);
+    setStatusText('ファイルを分析中...');
+    setStatusIcon(() => Sparkles);
 
     try {
+      // ファイル名とプロンプトを両方表示
+      const content = prompt
+        ? `📎 ${file.name}\n\n${prompt}`
+        : `📎 ${file.name}`;
+
       const userMessage = {
         role: 'user' as const,
-        content: message,
-        id: `user-${Date.now()}`
+        content: content,
+        id: `user-${Date.now()}`,
+      };
+
+      setFileAnalysisMessages(prev => [...prev, userMessage]);
+
+      console.log('[File Analysis] Analyzing file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        prompt: prompt || '(no prompt)',
+      });
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/analyze-file', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const assistantMessage = {
+          role: 'assistant' as const,
+          content: data.analysis,
+          id: `assistant-${Date.now()}`
+        };
+        setFileAnalysisMessages(prev => [...prev, assistantMessage]);
+
+        console.log('[File Analysis] Analysis complete:', {
+          fileType: data.fileType,
+          originalFileType: data.originalFileType,
+          processingMode: data.processingMode,
+          extractedTextLength: data.extractedTextLength,
+          analysisLength: data.analysis.length,
+        });
+      } else {
+        throw new Error(data.details || data.error || '分析に失敗しました');
+      }
+    } catch (error) {
+      console.error('[File Analysis] Error:', error);
+
+      let errorContent = 'エラーが発生しました。';
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          errorContent = '⚠️ Gemini API キーが設定されていません。環境変数を確認してください。';
+        } else if (error.message.includes('quota')) {
+          errorContent = '⚠️ API の使用量制限に達しました。しばらく待ってから再度お試しください。';
+        } else if (error.message.includes('timeout')) {
+          errorContent = '⚠️ ファイルの分析に時間がかかりすぎました。より小さいファイルでお試しください。';
+        } else if (error.message.includes('unsupported')) {
+          errorContent = '⚠️ このファイル形式はサポートされていません。';
+        } else {
+          errorContent = `エラー: ${error.message}`;
+        }
+      }
+
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: errorContent,
+        id: `error-${Date.now()}`
+      };
+      setFileAnalysisMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsFileAnalysisLoading(false);
+      setStatusText('');
+      setStatusIcon(null);
+    }
+  };
+
+  const sendDifyMessage = async (message: string, file?: File) => {
+    setIsDifyLoading(true);
+    setStatusText('処理中...');
+    setStatusIcon(() => Sparkles);
+
+    try {
+      let finalMessage = message;
+
+      // ファイルがある場合は、まず分析
+      if (file) {
+        console.log('[Dify] Analyzing file first:', file.name);
+        setStatusText('ファイルを分析中...');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const analysisResponse = await fetch('/api/analyze-file', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const analysisData = await analysisResponse.json();
+
+        if (analysisData.success) {
+          // ファイル分析結果を含めたメッセージを作成
+          finalMessage = message
+            ? `【添付ファイル】${file.name}\n\n【ファイル内容】\n${analysisData.analysis}\n\n【質問】\n${message}`
+            : `【添付ファイル】${file.name}\n\n【ファイル内容】\n${analysisData.analysis}`;
+        } else {
+          throw new Error(analysisData.details || analysisData.error || 'ファイル分析に失敗しました');
+        }
+      }
+
+      const userMessage = {
+        role: 'user' as const,
+        content: file ? `📎 ${file.name}\n\n${message || 'このファイルをレビューしてください'}` : message,
+        id: `user-${Date.now()}`,
       };
 
       setDifyMessages(prev => [...prev, userMessage]);
+      setStatusText('AIが応答中...');
+
+      console.log('[Dify] Sending message:', {
+        mode,
+        messageLength: finalMessage.length,
+        conversationId: difyConversationId,
+        hasFile: !!file,
+      });
 
       const response = await fetch('/api/dify-chat', {
         method: 'POST',
@@ -51,14 +181,17 @@ function AppPageContent() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message,
+          message: finalMessage, // ファイル分析結果を含むメッセージ
           conversationId: difyConversationId,
-          user: 'user'
+          user: 'user',
+          mode: mode,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[Dify Chat] Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
       }
 
       const reader = response.body?.getReader();
@@ -107,15 +240,33 @@ function AppPageContent() {
         }
       }
     } catch (error) {
-      console.error('Dify chat error:', error);
+      console.error('[Dify] Chat error:', error);
+      let errorContent = 'エラーが発生しました。';
+
+      if (error instanceof Error) {
+        console.error('[Dify] Error details:', error.message);
+
+        if (error.message.includes('invalid_param')) {
+          errorContent = 'パラメータエラー：ファイル分析結果の送信に失敗しました。開発者に連絡してください。';
+        } else if (error.message.includes('400')) {
+          errorContent = 'リクエストエラー（400）：送信データに問題があります。開発者に連絡してください。';
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+          errorContent = 'API認証エラーです。管理者にお問い合わせください。';
+        } else {
+          errorContent = `エラー: ${error.message}`;
+        }
+      }
+
       const errorMessage = {
         role: 'assistant' as const,
-        content: 'エラーが発生しました。もう一度お試しください。',
+        content: errorContent,
         id: `error-${Date.now()}`
       };
       setDifyMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsDifyLoading(false);
+      setStatusText('');
+      setStatusIcon(null);
     }
   };
 
@@ -124,18 +275,21 @@ function AppPageContent() {
     input,
     handleInputChange,
     handleSubmit: originalHandleSubmit,
+    append,
     isLoading,
     error,
+    setInput,
   } = useChat({
     api: '/api/test-gemini',
     id: conversationId,
     body: {
       model: currentModel.modelName, // モデル名の文字列を送信
+      mode: mode, // モードを渡す（契約書レビューなど）
     },
     maxSteps: 5,
   });
 
-  const isOverallLoading = isFAQMode ? isDifyLoading : isLoading;
+  const isOverallLoading = isDifyMode ? isDifyLoading : isFileAnalysisMode ? isFileAnalysisLoading : isLoading;
 
   useEffect(() => {
     if (isOverallLoading) {
@@ -153,12 +307,23 @@ function AppPageContent() {
     }
   }, [messages.length]);
 
-  const handleCustomSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCustomSubmit = async (e: React.FormEvent<HTMLFormElement>, file?: File) => {
     e.preventDefault();
 
-    if (isFAQMode) {
-      if (input.trim()) {
-        await sendDifyMessage(input.trim());
+    // ファイル分析モードの場合
+    if (isFileAnalysisMode) {
+      if (file) {
+        await sendFileAnalysisMessage(file, input);
+        handleInputChange({ target: { value: '' } } as any);
+      }
+      return;
+    }
+
+    // Difyモードの場合
+    if (isDifyMode) {
+      // ファイルがあるか、入力がある場合に送信
+      if (file || input.trim()) {
+        await sendDifyMessage(input.trim(), file);
         handleInputChange({ target: { value: '' } } as any);
       }
       return;
@@ -168,14 +333,45 @@ function AppPageContent() {
       setConversationId(`conv-${Date.now()}`);
     }
 
-    originalHandleSubmit(e, {
-      body: {
-        model: currentModel.modelName, // モデル名の文字列を送信
-      }
-    });
+    // ファイルが添付されている場合、appendを使って送信
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        await append(
+          {
+            role: 'user',
+            content: input,
+          },
+          {
+            experimental_attachments: [
+              {
+                name: file.name,
+                contentType: file.type,
+                url: reader.result as string,
+              },
+            ],
+            body: {
+              model: currentModel.modelName,
+              mode: mode, // モードを渡す
+            }
+          }
+        );
+
+        setInput('');
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // ファイルなしの場合は従来通り
+      originalHandleSubmit(e, {
+        body: {
+          model: currentModel.modelName,
+          mode: mode, // モードを渡す
+        }
+      });
+    }
   };
 
-  const currentMessages = isFAQMode ? difyMessages : messages;
+  const currentMessages = isDifyMode ? difyMessages : isFileAnalysisMode ? fileAnalysisMessages : messages;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -274,7 +470,7 @@ function AppPageContent() {
                 <MessageSquare className="w-4 h-4 text-white" />
               </div>
               <span className="font-semibold text-slate-900">
-                {isFAQMode ? 'FAQ自動応答' : 'チャット'}
+                {isFAQMode ? 'FAQ自動応答' : isContractReviewMode ? '契約書レビュー' : isPDFAnalysisMode ? 'PDF分析' : isExcelAnalysisMode ? 'Excel分析' : 'チャット'}
               </span>
             </div>
           </div>
@@ -311,16 +507,22 @@ function AppPageContent() {
                         <div className="space-y-4">
                           <h1 className="text-5xl font-bold leading-[1.2] pb-1">
                             <span className="bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent inline-block py-1">
-                              {isFAQMode ? 'FAQ自動応答' : 'Addness AI Agent'}
+                              {isFAQMode ? 'FAQ自動応答' : isContractReviewMode ? '契約書レビュー' : isPDFAnalysisMode ? 'PDF分析' : isExcelAnalysisMode ? 'Excel分析' : 'Addness AI Agent'}
                             </span>
                           </h1>
                           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
                             {isFAQMode
                               ? 'よくある質問にお答えします。何でもお聞きください。'
+                              : isContractReviewMode
+                              ? '契約書を分析し、リスクをチェックします。'
+                              : isPDFAnalysisMode
+                              ? 'PDFファイルをAIが詳細に分析します。'
+                              : isExcelAnalysisMode
+                              ? 'Excel/CSVデータをAIが詳細に分析します。'
                               : 'あなたの最高のAIパートナー。何でもお気軽にお聞きください。'
                             }
                           </p>
-                          {!isFAQMode && (
+                          {!isDifyMode && !isFileAnalysisMode && !isContractReviewMode && (
                             <div className="flex flex-col items-center gap-4">
                               <div className="flex items-center gap-2 text-sm text-slate-600">
                                 <Settings className="w-4 h-4" />
@@ -401,6 +603,9 @@ function AppPageContent() {
             isLoading={isOverallLoading}
             isDeepResearchMode={false}
             onDeepResearchModeChange={() => { }}
+            isDifyMode={isDifyMode}
+            isFileAnalysisMode={isFileAnalysisMode}
+            fileAnalysisType={isPDFAnalysisMode ? 'pdf' : isExcelAnalysisMode ? 'excel' : undefined}
           />
         </div>
       </div>
