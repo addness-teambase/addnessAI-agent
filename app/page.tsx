@@ -11,6 +11,14 @@ import { ModelSelector } from './components/ModelSelector';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useSearchParams, useRouter } from 'next/navigation';
+import {
+  createConversation,
+  getMessages,
+  saveMessage,
+  autoGenerateTitle,
+  supabase,
+} from '@/lib/supabase';
+import { ConversationList } from './components/ConversationList';
 
 type UIMessage = Message;
 
@@ -26,7 +34,8 @@ function AppPageContent() {
   const isDifyMode = isFAQMode || isContractReviewMode; // FAQと契約書レビューがDifyを使用
   const router = useRouter();
 
-  const [conversationId, setConversationId] = useState<string>(`conv-${Date.now()}`);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isConversationReady, setIsConversationReady] = useState(false);
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -60,6 +69,17 @@ function AppPageContent() {
 
       setFileAnalysisMessages(prev => [...prev, userMessage]);
 
+      // Supabaseにユーザーメッセージを保存
+      if (supabase && conversationId) {
+        await saveMessage(
+          conversationId,
+          'user',
+          content,
+          { name: file.name, type: file.type, size: file.size }
+        );
+        await autoGenerateTitle(conversationId);
+      }
+
       console.log('[File Analysis] Analyzing file:', {
         name: file.name,
         type: file.type,
@@ -84,6 +104,11 @@ function AppPageContent() {
           id: `assistant-${Date.now()}`
         };
         setFileAnalysisMessages(prev => [...prev, assistantMessage]);
+
+        // Supabaseにアシスタントメッセージを保存
+        if (supabase && conversationId) {
+          await saveMessage(conversationId, 'assistant', data.analysis);
+        }
 
         console.log('[File Analysis] Analysis complete:', {
           fileType: data.fileType,
@@ -184,6 +209,19 @@ function AppPageContent() {
       setDifyMessages(prev => [...prev, userMessage]);
       setStatusText('AIが応答中...');
 
+      // Supabaseにユーザーメッセージを保存
+      if (supabase && conversationId) {
+        await saveMessage(
+          conversationId,
+          'user',
+          userMessage.content,
+          file ? { name: file.name, type: file.type, size: file.size } : undefined
+        );
+
+        // タイトルが「新しい会話」の場合、自動生成
+        await autoGenerateTitle(conversationId);
+      }
+
       // メッセージとファイルの両方がない場合はエラー
       if (!message.trim() && fileIds.length === 0) {
         throw new Error('メッセージまたはファイルが必要です');
@@ -278,6 +316,11 @@ function AppPageContent() {
                   );
                 } else if (data.event === 'message_end') {
                   setDifyConversationId(data.conversation_id);
+
+                  // Supabaseにアシスタントメッセージを保存（ストリーミング完了時）
+                  if (supabase && conversationId && assistantMessage.content) {
+                    await saveMessage(conversationId, 'assistant', assistantMessage.content);
+                  }
                 }
               } catch (e) {
                 console.log('Parsing error:', e);
@@ -339,12 +382,21 @@ function AppPageContent() {
     setInput,
   } = useChat({
     api: '/api/test-gemini',
-    id: conversationId,
+    id: conversationId || undefined,
     body: {
       model: currentModel.modelName, // モデル名の文字列を送信
       mode: mode, // モードを渡す（契約書レビューなど）
     },
     maxSteps: 5,
+    onFinish: async (message) => {
+      // 通常モードの場合、メッセージをSupabaseに保存
+      if (supabase && conversationId && !isDifyMode && !isFileAnalysisMode) {
+        // AI応答を保存
+        await saveMessage(conversationId, 'assistant', message.content);
+        // タイトル自動生成
+        await autoGenerateTitle(conversationId);
+      }
+    },
   });
 
   const isOverallLoading = isDifyMode ? isDifyLoading : isFileAnalysisMode ? isFileAnalysisLoading : isLoading;
@@ -359,11 +411,74 @@ function AppPageContent() {
     }
   }, [isOverallLoading]);
 
+  // 会話の初期化（マウント時に新しい会話を作成）
   useEffect(() => {
-    if (messages.length === 0) {
-      setConversationId(`conv-${Date.now()}`);
+    const initConversation = async () => {
+      if (conversationId) return; // 既に会話がある場合はスキップ
+
+      if (supabase) {
+        // Supabaseが有効な場合、新しい会話を作成
+        const newConv = await createConversation(
+          '新しい会話',
+          mode || null,
+          currentModel.modelName
+        );
+        if (newConv) {
+          setConversationId(newConv.id);
+        }
+      } else {
+        // Supabaseが無効な場合、ローカルIDを使用
+        setConversationId(`local-${Date.now()}`);
+      }
+      setIsConversationReady(true);
+    };
+
+    initConversation();
+  }, [conversationId, mode, currentModel.modelName]);
+
+  // 新しい会話を作成
+  const handleNewConversation = async () => {
+    if (supabase) {
+      const newConv = await createConversation(
+        '新しい会話',
+        mode || null,
+        currentModel.modelName
+      );
+      if (newConv) {
+        setConversationId(newConv.id);
+      }
+    } else {
+      setConversationId(`local-${Date.now()}`);
     }
-  }, [messages.length]);
+
+    // メッセージをクリア
+    setDifyMessages([]);
+    setFileAnalysisMessages([]);
+    setInput('');
+  };
+
+  // 既存の会話を読み込む
+  const handleLoadConversation = async (convId: string) => {
+    setConversationId(convId);
+
+    if (supabase) {
+      const messages = await getMessages(convId);
+
+      // モードに応じてメッセージを設定
+      const formattedMessages = messages.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        id: msg.id,
+      }));
+
+      if (isDifyMode) {
+        setDifyMessages(formattedMessages);
+      } else if (isFileAnalysisMode) {
+        setFileAnalysisMessages(formattedMessages);
+      }
+      // 通常モードの場合は、useChatが自動的に管理するためここでは設定しない
+    }
+  };
 
   const handleCustomSubmit = async (e: React.FormEvent<HTMLFormElement>, file?: File) => {
     e.preventDefault();
@@ -389,6 +504,16 @@ function AppPageContent() {
 
     if (messages.length === 0) {
       setConversationId(`conv-${Date.now()}`);
+    }
+
+    // Supabaseにユーザーメッセージを保存（通常モード）
+    if (supabase && conversationId) {
+      await saveMessage(
+        conversationId,
+        'user',
+        input,
+        file ? { name: file.name, type: file.type, size: file.size } : undefined
+      );
     }
 
     // ファイルが添付されている場合、appendを使って送信
@@ -449,7 +574,7 @@ function AppPageContent() {
           </div>
 
           {/* Navigation */}
-          <div className="flex-1 px-4 py-6 space-y-2">
+          <div className="px-4 py-3 space-y-2">
             <button className="w-full flex items-center gap-3 px-4 py-3 text-blue-600 bg-blue-50 rounded-xl font-medium">
               <MessageSquare className="w-5 h-5" />
               <span>チャット</span>
@@ -462,6 +587,17 @@ function AppPageContent() {
               <span className="font-medium">エージェント一覧</span>
             </button>
           </div>
+
+          {/* 会話履歴（Supabaseが有効な場合のみ表示） */}
+          {supabase && (
+            <div className="flex-1 overflow-hidden border-t border-slate-100">
+              <ConversationList
+                currentConversationId={conversationId}
+                onConversationSelect={handleLoadConversation}
+                onNewConversation={handleNewConversation}
+              />
+            </div>
+          )}
 
           {/* User Profile */}
           <div className="p-4 border-t border-slate-100">
@@ -494,7 +630,7 @@ function AppPageContent() {
                     </div>
                   </div>
                 </div>
-                <div className="flex-1 px-4 py-6 space-y-2">
+                <div className="px-4 py-3 space-y-2">
                   <button className="w-full flex items-center gap-3 px-4 py-3 text-blue-600 bg-blue-50 rounded-xl font-medium">
                     <MessageSquare className="w-5 h-5" />
                     <span>チャット</span>
@@ -507,6 +643,23 @@ function AppPageContent() {
                     <span className="font-medium">エージェント一覧</span>
                   </button>
                 </div>
+
+                {/* 会話履歴（Supabaseが有効な場合のみ表示） */}
+                {supabase && (
+                  <div className="flex-1 overflow-hidden border-t border-slate-100">
+                    <ConversationList
+                      currentConversationId={conversationId}
+                      onConversationSelect={(convId) => {
+                        handleLoadConversation(convId);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      onNewConversation={() => {
+                        handleNewConversation();
+                        setIsMobileMenuOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </SheetContent>
