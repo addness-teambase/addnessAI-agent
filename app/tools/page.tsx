@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useProposalGeneration } from '../hooks/useProposalGeneration';
 import {
   Card,
   CardContent,
@@ -41,8 +47,11 @@ import {
   Sparkles,
   ArrowRight,
   PanelLeft,
-  X
+  X,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 type AgentCategory = {
   id: string;
@@ -57,6 +66,7 @@ type Agent = {
   icon: React.ReactNode;
   category: string;
   link: string;
+  isDialog?: boolean; // ダイアログで開くかどうか
 };
 
 const agentCategories: AgentCategory[] = [
@@ -65,6 +75,14 @@ const agentCategories: AgentCategory[] = [
     name: '営業・マーケティング系',
     icon: <BarChart3 className="w-5 h-5" />,
     agents: [
+      {
+        name: '提案書自動生成（Dify）',
+        description: '役職・部署・課題を入力→提案書作成',
+        icon: <FileText className="w-6 h-6 text-blue-600" />,
+        category: '営業・マーケティング系',
+        link: '#',
+        isDialog: true,
+      },
       {
         name: '提案資料自動生成',
         description: '企業情報入力→提案書作成',
@@ -181,14 +199,33 @@ export default function ToolsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
 
-  const handleCardClick = (link: string) => {
-    if (link.includes('mode=faq-auto-response') || link.includes('mode=contract-review')) {
-      router.push(link);
+  // 提案書生成用のステート
+  const [isProposalDialogOpen, setIsProposalDialogOpen] = useState(false);
+  const [yakusyoku, setYakusyoku] = useState<string>('');
+  const [busyo, setBusyo] = useState<string>('');
+  const [kadai, setKadai] = useState<string>('');
+  const { messages, isLoading, generateProposal, reset } = useProposalGeneration();
+
+  const handleCardClick = (agent: Agent) => {
+    if (agent.isDialog) {
+      // ダイアログを開く
+      setIsProposalDialogOpen(true);
+      reset(); // 前回の状態をリセット
+      setYakusyoku('');
+      setBusyo('');
+      setKadai('');
+    } else if (agent.link.includes('mode=faq-auto-response') || agent.link.includes('mode=contract-review')) {
+      router.push(agent.link);
       // Difyモード（FAQ、契約書レビュー）の場合はリロードして状態をリセット
       setTimeout(() => window.location.reload(), 100);
     } else {
-      router.push(link);
+      router.push(agent.link);
     }
+  };
+
+  const handleGenerateProposal = async () => {
+    if (!yakusyoku) return;
+    await generateProposal({ yakusyoku, busyo, kadai });
   };
 
   // 検索フィルター
@@ -385,7 +422,7 @@ export default function ToolsPage() {
                     <Card
                       key={agent.name}
                       className="group relative overflow-hidden cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-white/80 backdrop-blur-sm hover:scale-[1.02]"
-                      onClick={() => handleCardClick(agent.link)}
+                      onClick={() => handleCardClick(agent)}
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent pointer-events-none" />
                       <CardHeader className="pb-4 relative">
@@ -429,6 +466,153 @@ export default function ToolsPage() {
           </div>
         </div>
       </div>
+
+      {/* 提案書自動生成ダイアログ */}
+      <Dialog open={isProposalDialogOpen} onOpenChange={setIsProposalDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-blue-600" />
+              提案書自動生成（Dify AI）
+            </DialogTitle>
+            <DialogDescription>
+              役職、所属部署、実際の課題感を入力してください。AIが最適な提案書を自動生成します。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* フォーム */}
+            {messages.length === 0 && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="yakusyoku" className="text-sm font-medium">
+                    役職 <span className="text-red-500">*</span>
+                  </Label>
+                  <Select value={yakusyoku} onValueChange={setYakusyoku}>
+                    <SelectTrigger id="yakusyoku">
+                      <SelectValue placeholder="役職を選択してください" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="代表">代表</SelectItem>
+                      <SelectItem value="管理職">管理職</SelectItem>
+                      <SelectItem value="役職なし">役職なし</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="busyo" className="text-sm font-medium">
+                    所属部署（任意）
+                  </Label>
+                  <Input
+                    id="busyo"
+                    placeholder="例: 営業部、IT部門"
+                    value={busyo}
+                    onChange={(e) => setBusyo(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="kadai" className="text-sm font-medium">
+                    実際の課題感（任意）
+                  </Label>
+                  <Textarea
+                    id="kadai"
+                    placeholder="例: 業務の属人化が進んでおり、特定の担当者に依存している状況です。"
+                    value={kadai}
+                    onChange={(e) => setKadai(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleGenerateProposal}
+                  disabled={!yakusyoku || isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      提案書を生成
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* 生成結果 */}
+            {messages.length > 0 && (
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`p-6 rounded-lg ${
+                      message.role === 'user'
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'bg-white border border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3 mb-2">
+                      <div
+                        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                          message.role === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gradient-to-br from-blue-600 to-purple-600 text-white'
+                        }`}
+                      >
+                        {message.role === 'user' ? '👤' : '🤖'}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm text-slate-700 mb-2">
+                          {message.role === 'user' ? 'あなた' : 'AI提案書生成'}
+                        </p>
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown>{message.content}</ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <span className="ml-3 text-slate-600">提案書を生成中...</span>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      reset();
+                      setYakusyoku('');
+                      setBusyo('');
+                      setKadai('');
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    新しい提案書を生成
+                  </Button>
+                  <Button
+                    onClick={() => setIsProposalDialogOpen(false)}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    閉じる
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

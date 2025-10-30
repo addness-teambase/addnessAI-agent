@@ -89,6 +89,7 @@ docker-compose logs -f
 - **AIチャット**: シンプルで使いやすいチャットインターフェース
 - **ツール実行**: Mastraエージェントを活用した各種タスクの自動化
 - **ツール実行の可視化**: Mastraエージェントのツール実行状況をリアルタイムに表示
+- **提案書自動生成**: Difyワークフローを使用した提案書の自動生成（役職・部署・課題を入力するだけ）
 - **レスポンシブデザイン**: モバイルからデスクトップまで対応したUI
 
 ## 技術スタック
@@ -143,6 +144,11 @@ FAL_KEY=your_fal_key_here
 # Get your API key from: https://nutrient.io/
 NUTRIENT_API_KEY=your_nutrient_api_key_here
 
+# Dify API Configuration (for proposal generation)
+# 提案書自動生成機能で使用
+DIFY_PROPOSAL_API_KEY=app-8fCbq5BGWkx76lTybaNrIrvx
+DIFY_API_BASE_URL=https://api.dify.ai/v1
+
 # Node Environment
 NODE_ENV=development
 ```
@@ -193,9 +199,23 @@ mastra build
 
 ## 使い方
 
+### 基本的なチャット機能
+
 1. チャットインターフェースでタスクや質問を入力
 2. AIがタスクを理解し、適切なツールを実行
 3. 結果がチャット内で表示される
+
+### 提案書自動生成機能
+
+1. サイドバーから「提案書自動生成」をクリック
+2. 以下の情報を入力：
+   - **役職**（必須）: 代表、管理職、役職なしから選択
+   - **所属部署**（任意）: 営業部、IT部門など
+   - **実際の課題感**（任意）: 具体的な課題を記載
+3. 「提案書を生成」ボタンをクリック
+4. AIが生成した提案書がリアルタイムで表示されます
+
+詳細は [docs/PROPOSAL_GENERATION.md](docs/PROPOSAL_GENERATION.md) を参照してください。
 
 ## ライセンス
 

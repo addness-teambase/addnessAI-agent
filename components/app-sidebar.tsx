@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Bot,
   Users,
+  FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -43,6 +44,11 @@ const data = {
       title: "エージェント一覧",
       url: "/tools",
       icon: Users,
+    },
+    {
+      title: "提案書自動生成",
+      url: "/proposal",
+      icon: FileText,
     },
   ],
 }
